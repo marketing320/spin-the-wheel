@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
     protected function seedAdmins(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@brightstarcomp.com'],
             ['name' => 'Administrator', 'password' => Hash::make('password'), 'is_admin' => true]
         );
 
@@ -58,7 +58,7 @@ class DatabaseSeeder extends Seeder
                         'pointer_color' => '#ffffff',
                         'hub_logo' => '🎡',
                         'background_style' => 'aurora',
-                        'animation_duration_ms' => 6500,
+                        'animation_duration_ms' => 8000,
                         'sound_enabled' => false,
                         'glow_intensity' => 65,
                         'three_intensity' => 75,

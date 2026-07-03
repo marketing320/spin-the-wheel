@@ -47,7 +47,7 @@ class LiveViewSettings extends Component
             'live_view.auto_reset_seconds' => (int) $this->auto_reset_seconds,
         ]);
 
-        session()->flash('status', 'Live view settings saved.');
+        $this->dispatch('admin-toast', message: 'Live view settings saved.');
     }
 
     public function render()

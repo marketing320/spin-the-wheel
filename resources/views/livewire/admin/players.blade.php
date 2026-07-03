@@ -3,11 +3,44 @@
         <input type="search" wire:model.live.debounce.400ms="search" placeholder="Search email or name…" class="field !py-2 text-sm sm:w-64">
     </x-admin.page-header>
 
+    {{-- Bulk selection + export toolbar --}}
+    @php
+        $exportParams = $selectAllMatching
+            ? array_filter(['all' => 1, 'search' => $search])
+            : ['ids' => implode(',', $selected)];
+        $canExport = $selectAllMatching || count($selected) > 0;
+    @endphp
+    <div class="mb-3 flex flex-wrap items-center gap-3">
+        <div class="text-sm font-semibold text-slate-600">
+            @if ($selectAllMatching)
+                All {{ $total }} players selected
+            @elseif (count($selected))
+                {{ count($selected) }} selected
+            @else
+                Tick players, or use the header box to select all {{ $total }}.
+            @endif
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+            @if ($canExport)
+                <button wire:click="clearSelection" class="btn-ghost !py-2 text-xs">Clear</button>
+            @endif
+            <a href="{{ $canExport ? route('admin.players.export', $exportParams) : '#' }}"
+               @class(['btn-primary !py-2 text-xs', 'pointer-events-none opacity-50' => ! $canExport])>
+                <i data-lucide="download" class="h-4 w-4"></i> Export CSV
+            </a>
+        </div>
+    </div>
+
     <div class="glass overflow-hidden rounded-2xl">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <tr>
+                        <th class="w-10 px-4 py-3">
+                            <input type="checkbox" wire:model.live="selectAllMatching"
+                                   title="Select all {{ $total }} players matching the search"
+                                   class="h-4 w-4 rounded accent-brand-500">
+                        </th>
                         <th class="px-4 py-3">Email</th>
                         <th class="px-4 py-3">Verified</th>
                         <th class="px-4 py-3">Form</th>
@@ -20,6 +53,13 @@
                 <tbody class="divide-y divide-slate-200">
                     @forelse ($players as $player)
                         <tr class="hover:bg-slate-100">
+                            <td class="px-4 py-3">
+                                @if ($selectAllMatching)
+                                    <input type="checkbox" checked disabled class="h-4 w-4 rounded accent-brand-500 opacity-60">
+                                @else
+                                    <input type="checkbox" value="{{ $player->id }}" wire:model.live="selected" class="h-4 w-4 rounded accent-brand-500">
+                                @endif
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="font-semibold text-slate-900">{{ $player->email }}</div>
                                 @if ($player->display_name)
@@ -67,7 +107,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">No players found.</td></tr>
+                        <tr><td colspan="8" class="px-4 py-10 text-center text-slate-500">No players found.</td></tr>
                     @endforelse
                 </tbody>
             </table>

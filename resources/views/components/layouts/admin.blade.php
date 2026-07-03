@@ -75,6 +75,23 @@
             {{ $slot }}
         </main>
     </div>
+
+    {{-- Global success toasts (fired by Livewire admin actions via `admin-toast`). --}}
+    <div x-data="{ toasts: [] }"
+         x-on:admin-toast.window="
+            const id = (Date.now() + '-' + Math.round(performance.now()));
+            toasts.push({ id, msg: ($event.detail && $event.detail.message) || 'Saved.' });
+            setTimeout(() => { toasts = toasts.filter((t) => t.id !== id); }, 3500);
+         "
+         class="pointer-events-none fixed right-4 top-4 z-[60] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2">
+        <template x-for="t in toasts" :key="t.id">
+            <div x-transition.opacity
+                 class="pointer-events-auto flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-emerald-500 px-4 py-3 text-sm font-bold text-white pixel-shadow">
+                <i data-lucide="check" class="h-5 w-5 shrink-0"></i>
+                <span x-text="t.msg"></span>
+            </div>
+        </template>
+    </div>
 </div>
 <style>[x-cloak]{display:none!important}</style>
 <x-lucide-scripts />

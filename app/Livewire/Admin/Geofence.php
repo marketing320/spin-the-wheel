@@ -65,7 +65,7 @@ class Geofence extends Component
             $data,
         );
 
-        session()->flash('status', 'Geofence settings saved.');
+        $this->dispatch('admin-toast', message: 'Geofence settings saved.');
     }
 
     public function render()

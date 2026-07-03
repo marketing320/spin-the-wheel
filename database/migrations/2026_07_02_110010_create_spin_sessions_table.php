@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamp('ends_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('expires_at')->nullable();
-            $table->unsignedInteger('spin_duration_ms')->default(6500);
+            $table->unsignedInteger('spin_duration_ms')->default(8000);
             $table->decimal('final_angle', 10, 4)->default(0);
             $table->string('animation_seed')->nullable();
             $table->string('request_ip', 45)->nullable();

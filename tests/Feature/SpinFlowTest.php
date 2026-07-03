@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Exceptions\SpinException;
 use App\Models\Campaign;
 use App\Models\GeofenceSetting;
-use App\Models\PlayRule;
 use App\Models\Player;
+use App\Models\PlayRule;
 use App\Models\Prize;
 use App\Models\SpinSession;
 use App\Services\SpinLockService;
@@ -19,6 +19,7 @@ class SpinFlowTest extends TestCase
     use RefreshDatabase;
 
     private Campaign $campaign;
+
     private SpinService $spins;
 
     protected function setUp(): void
@@ -78,6 +79,10 @@ class SpinFlowTest extends TestCase
         $this->assertTrue($this->campaign->prizes->pluck('id')->contains($session->prize_id));
         $this->assertNotEmpty($session->metadata['segments']);
         $this->assertSame(SpinSession::STATUS_ACTIVE, $session->status);
+        $this->assertSame(8000, $session->spin_duration_ms);
+        $this->assertEquals(8000, $session->started_at->diffInMilliseconds($session->ends_at));
+        $this->assertEquals(7000, $session->ends_at->diffInMilliseconds($session->buffer_ends_at));
+        $this->assertSame(11000, $this->spins->buildStartedPayload($session)['sound_duration_ms']);
     }
 
     public function test_only_one_player_can_spin_at_a_time(): void
@@ -114,16 +119,42 @@ class SpinFlowTest extends TestCase
         }
     }
 
-    public function test_completing_a_spin_records_a_result_and_releases_the_lock(): void
+    public function test_completing_a_spin_records_a_result_and_keeps_the_lock_through_the_buffer(): void
     {
         $session = $this->spins->start($this->readyPlayer());
         $this->spins->complete($session);
 
         $session->refresh();
+        $this->assertSame(SpinSession::STATUS_ACTIVE, $session->status);
+        $this->assertSame(SpinSession::GUARD_ON, $session->active_guard);
+        $this->assertDatabaseHas('spin_results', ['spin_session_id' => $session->id]);
+
+        $this->travel(16)->seconds();
+        app(SpinLockService::class)->currentActive();
+
+        $session->refresh();
         $this->assertSame(SpinSession::STATUS_COMPLETED, $session->status);
         $this->assertNull($session->active_guard);
-        $this->assertDatabaseHas('spin_results', ['spin_session_id' => $session->id]);
         $this->assertSame(0, SpinSession::whereNotNull('active_guard')->count());
+    }
+
+    public function test_another_player_cannot_spin_during_the_seven_second_buffer(): void
+    {
+        $session = $this->spins->start($this->readyPlayer());
+        $this->spins->complete($session);
+
+        $this->travel(14)->seconds();
+
+        try {
+            $this->spins->start($this->readyPlayer());
+            $this->fail('The global lock should remain held during the result buffer.');
+        } catch (SpinException $e) {
+            $this->assertSame('spin_in_progress', $e->reason);
+        }
+
+        $this->travel(2)->seconds();
+        $next = $this->spins->start($this->readyPlayer());
+        $this->assertSame(SpinSession::STATUS_ACTIVE, $next->status);
     }
 
     public function test_player_outside_geofence_cannot_spin(): void

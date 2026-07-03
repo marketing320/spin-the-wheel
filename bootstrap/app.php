@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'player' => \App\Http\Middleware\EnsurePlayerRegistered::class,
             'player.form' => \App\Http\Middleware\EnsurePlayerFormCompleted::class,
+            'player.mobile' => \App\Http\Middleware\EnsureMobilePlayerDevice::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
 

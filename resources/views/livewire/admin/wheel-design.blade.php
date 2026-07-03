@@ -59,12 +59,12 @@
                     <div>
                         <label class="label">Spin duration (ms)</label>
                         <div class="flex items-center gap-3">
-                            <input type="range" min="3000" max="15000" step="100"
-                                wire:model.live="animation_duration_ms"
-                                class="h-2 w-full cursor-pointer accent-brand-500">
+                            <input type="range" min="8000" max="8000" step="100"
+                                wire:model.live="animation_duration_ms" disabled
+                                class="h-2 w-full cursor-not-allowed accent-brand-500">
                             <span class="w-16 shrink-0 text-right text-sm font-semibold text-slate-900">{{ $animation_duration_ms }}</span>
                         </div>
-                        <p class="mt-1 text-xs text-slate-500">How long a spin animation lasts (3000–15000 ms).</p>
+                        <p class="mt-1 text-xs text-slate-500">Fixed at 8 seconds to stay synchronized across all screens.</p>
                         @error('animation_duration_ms') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
                     </div>
                     <div>

@@ -3,7 +3,6 @@ import { SpinController } from './spin-controller';
 import { fireConfetti } from './confetti-controller';
 import { subscribeToSpins } from './live-sync';
 
-/** Read the JSON config the blade view embedded. */
 function readConfig() {
     const el = document.getElementById('spin-config');
     return el ? JSON.parse(el.textContent) : null;
@@ -13,11 +12,12 @@ function getCoords(enabled) {
     if (!enabled || !('geolocation' in navigator)) {
         return Promise.resolve({ lat: null, lng: null });
     }
+
     return new Promise((resolve) => {
         navigator.geolocation.getCurrentPosition(
-            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
             () => resolve({ lat: null, lng: null }),
-            { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
         );
     });
 }
@@ -27,166 +27,264 @@ export function initPlayerPage() {
     if (!config) return;
 
     const stage = document.getElementById('wheel-stage');
+    const pointer = document.getElementById('wheel-pointer');
     const wheel = createWheel(stage, config.segments || []);
-    const controller = new SpinController(wheel);
-
+    const controller = new SpinController(wheel, { pointer, soundUrl: config.soundUrl });
     const button = document.getElementById('spin-button');
+    const idleLabel = button?.querySelector('[data-label-idle-text]');
     const hint = document.getElementById('spin-hint');
     const banner = document.getElementById('status-banner');
     const modal = document.getElementById('result-modal');
-
     const csrf = config.csrf || document.querySelector('meta[name=csrf-token]')?.content;
-    let mySpinId = null;
-    let busy = false;
 
-    const setHint = (t) => { if (hint) hint.textContent = t || ''; };
-    const setBusy = (state) => {
-        busy = state;
-        if (!button) return;
-        button.disabled = state;
-        button.querySelector('[data-label-idle]')?.classList.toggle('hidden', state);
-        button.querySelector('[data-label-spinning]')?.classList.toggle('hidden', !state);
-    };
-    const enableIfEligible = (elig) => {
-        if (!button) return;
-        const ok = elig?.eligible && !elig?.spin_in_progress;
-        button.disabled = !ok;
-        if (banner && elig && !elig.eligible && elig.message) {
-            banner.innerHTML = `<div class="glass rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">${elig.message}</div>`;
-        } else if (banner && ok) {
-            banner.innerHTML = '';
+    // Live prize display above the pointer — shows whatever is under the pointer.
+    const segmentsList = config.segments || [];
+    const prizeChip = document.getElementById('pointer-prize-chip');
+    const prizeImage = document.getElementById('pointer-prize-image');
+    const prizeIcon = document.getElementById('pointer-prize-icon');
+    const prizeName = document.getElementById('pointer-prize-name');
+
+    function showSegment(index) {
+        const seg = segmentsList[index];
+        if (!seg || !prizeName) return;
+        prizeName.textContent = seg.label || '';
+        if (prizeChip) prizeChip.style.background = seg.color || '#0e75bc';
+        if (prizeImage && prizeIcon) {
+            const hasImage = Boolean(seg.image);
+            prizeImage.classList.toggle('hidden', !hasImage);
+            prizeIcon.classList.toggle('hidden', hasImage);
+            if (hasImage) prizeImage.src = seg.image;
         }
+    }
+
+    let mySpinId = null;
+    let submitting = false;
+    let spinning = false;
+    let eligibility = {
+        eligible: Boolean(config.eligibility?.eligible),
+        spin_in_progress: Boolean(config.spinInProgress),
+        queue: config.queue || { queued: false, position: null, ahead: 0 },
+        can_start: false,
     };
+
+    const setHint = (text) => { if (hint) hint.textContent = text || ''; };
+
+    function queueMessage(queue) {
+        const ahead = Number(queue?.ahead || 0);
+        if (ahead === 1) return 'There is 1 person in front of you. Please wait…';
+        if (ahead > 1) return `There are ${ahead} people in front of you. Please wait…`;
+        return 'You are first in the queue. Please wait for your turn…';
+    }
+
+    function renderState() {
+        if (!button) return;
+
+        const queue = eligibility.queue || {};
+        const ownSpinActive = Boolean(mySpinId && spinning);
+        const canJoin = eligibility.eligible && !queue.queued && !ownSpinActive && !submitting;
+        const canSpin = eligibility.eligible && queue.queued && eligibility.can_start && !ownSpinActive && !submitting;
+        const available = eligibility.eligible && !queue.queued && !eligibility.spin_in_progress && !ownSpinActive && !submitting;
+
+        button.disabled = !(canJoin || canSpin || available);
+        button.querySelector('[data-label-idle]')?.classList.toggle('hidden', submitting || ownSpinActive);
+        button.querySelector('[data-label-spinning]')?.classList.toggle('hidden', !(submitting || ownSpinActive));
+
+        if (idleLabel) {
+            idleLabel.textContent = canSpin ? 'YOUR TURN — SPIN' : 'SPIN!';
+        }
+
+        if (!eligibility.eligible && eligibility.message) {
+            if (banner) banner.innerHTML = `<div class="rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">${eligibility.message}</div>`;
+            setHint('');
+        } else {
+            if (banner) banner.innerHTML = '';
+            if (queue.queued) {
+                setHint(canSpin ? 'It is your turn. Tap the button to spin!' : queueMessage(queue));
+            } else if (eligibility.spin_in_progress && !spinning) {
+                setHint('Another player is spinning…');
+            } else if (!spinning && !submitting) {
+                setHint('');
+            }
+        }
+    }
 
     async function post(url, body) {
-        const res = await fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrf,
-                'Accept': 'application/json',
+                Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
             },
             body: JSON.stringify(body || {}),
         });
-        return { status: res.status, data: await res.json().catch(() => ({})) };
+
+        return { status: response.status, data: await response.json().catch(() => ({})) };
     }
 
     async function refreshEligibility() {
         try {
-            const res = await fetch(config.routes.eligibility, {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            const response = await fetch(config.routes.eligibility, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
-            enableIfEligible(await res.json());
-        } catch (e) { /* ignore */ }
+            if (response.ok) eligibility = await response.json();
+            renderState();
+        } catch (_) {
+            // Preserve the last known state during a temporary network failure.
+        }
     }
 
     function showResult(result) {
         if (!modal) return;
-        const img = modal.querySelector('#result-prize-image');
-        if (img) {
-            if (result.prize_image) {
-                img.src = result.prize_image;
-                img.classList.remove('hidden');
-            } else {
-                img.classList.add('hidden');
-            }
+        const image = modal.querySelector('#result-prize-image');
+        if (image) {
+            image.classList.toggle('hidden', !result.prize_image);
+            if (result.prize_image) image.src = result.prize_image;
         }
         modal.querySelector('#result-prize-name').textContent = result.prize_name || 'A prize!';
-        const rarityEl = modal.querySelector('#result-rarity');
-        if (rarityEl && result.prize_rarity) {
-            rarityEl.innerHTML = `<span class="pill font-display uppercase bg-slate-100 text-slate-700 ring-2 ring-slate-300">${result.prize_rarity}</span>`;
+        const rarity = modal.querySelector('#result-rarity');
+        if (rarity && result.prize_rarity) {
+            rarity.innerHTML = `<span class="pill bg-slate-100 font-display uppercase text-slate-700 ring-2 ring-slate-300">${result.prize_rarity}</span>`;
         }
         modal.querySelector('#result-message').textContent = result.redemption_message || '';
         const link = modal.querySelector('#result-link');
         if (link && mySpinId) link.href = config.routes.result.replace('SPIN_ID', mySpinId);
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        fireConfetti(result.confetti_level || 'medium');
+        fireConfetti(result.confetti_level || 'medium', {
+            image: result.confetti_image,
+            imageCount: result.confetti_image_count,
+            imageSize: result.confetti_image_size,
+        });
     }
 
-    async function completeMySpin() {
+    async function completeMySpin(result) {
         if (!mySpinId) return;
-        const { data } = await post(config.routes.complete.replace('SPIN_ID', mySpinId));
-        showResult(data.result || {});
+        showResult(result || {});
+        await post(config.routes.complete.replace('SPIN_ID', mySpinId));
     }
 
     async function onSpinClick() {
-        if (busy) return;
-        setBusy(true);
-        setHint('Getting ready…');
+        if (submitting || (mySpinId && spinning)) return;
+
+        submitting = true;
+        const queue = eligibility.queue || {};
+        const shouldJoin = !queue.queued && (eligibility.spin_in_progress || Number(queue.count || 0) > 0);
+        setHint(shouldJoin ? 'Please wait…' : 'Checking your location…');
+        renderState();
+
+        if (shouldJoin) {
+            const { status, data } = await post(config.routes.queue);
+            submitting = false;
+            if (status === 202 && data.queued) {
+                eligibility.queue = data.queue;
+                eligibility.spin_in_progress = true;
+                eligibility.can_start = false;
+                renderState();
+                return;
+            }
+            setHint(data.message || 'Unable to spin right now.');
+            await refreshEligibility();
+            return;
+        }
+
+        // This must run inside the final tap gesture for mobile audio.
+        await controller.audio.unlock();
 
         const coords = await getCoords(config.geofenceEnabled);
         const { status, data } = await post(config.routes.start, coords);
+        submitting = false;
 
-        if (status === 200 && data.ok) {
+        if (status === 200 && data.ok && data.spin) {
             mySpinId = data.spin.spin_session_id;
-            setHint('Good luck! 🍀');
-            controller.run(data.spin, { onComplete: completeMySpin });
-        } else {
-            setBusy(false);
-            setHint(data.message || 'Unable to spin right now.');
-            if (data.next_available_at) {
-                setHint(`${data.message} `);
-            }
+            spinning = true;
+            eligibility.spin_in_progress = true;
+            eligibility.queue = { queued: false, position: null, ahead: 0 };
+            setHint('Good luck!');
+            renderState();
+            controller.run(data.spin, {
+                onSegment: showSegment,
+                onComplete: async () => {
+                    spinning = false;
+                    await completeMySpin(data.spin);
+                    renderState();
+                },
+            });
+            return;
         }
+
+        if (status === 202 && data.queued) {
+            eligibility.queue = data.queue;
+            eligibility.spin_in_progress = true;
+            eligibility.can_start = false;
+            renderState();
+            return;
+        }
+
+        setHint(data.message || 'Unable to spin right now.');
+        await refreshEligibility();
     }
 
     button?.addEventListener('click', onSpinClick);
 
-    // Mirror other players' spins + keep the waiting state fresh.
     subscribeToSpins({
-        onStarted: (e) => {
-            if (e.spin_session_id === mySpinId) return; // our own — already animating
-            setBusy(true);
-            setHint(`${e.player_display || 'Another player'} is spinning…`);
-            controller.run(e);
+        onStarted: (payload) => {
+            if (payload.spin_session_id === mySpinId) return;
+            eligibility.spin_in_progress = true;
+            spinning = true;
+            setHint(`${payload.player_display || 'Another player'} is spinning…`);
+            renderState();
+            controller.run(payload, {
+                onSegment: showSegment,
+                onComplete: () => {
+                    spinning = false;
+                    refreshEligibility();
+                },
+            });
         },
-        onCompleted: (e) => {
-            if (e.spin_session_id === mySpinId) return;
-            setHint('');
-            setBusy(false);
+        onCompleted: (payload) => {
+            if (payload.spin_session_id === mySpinId) return;
+            spinning = false;
             refreshEligibility();
         },
-        onExpired: () => { setBusy(false); setHint(''); refreshEligibility(); },
+        onExpired: () => {
+            spinning = false;
+            refreshEligibility();
+        },
+        onQueueUpdated: refreshEligibility,
     });
 
     const fetchActive = () => fetch(config.routes.active, { headers: { Accept: 'application/json' } })
-        .then((r) => r.json())
+        .then((response) => response.json())
         .catch(() => null);
 
-    if (window.Echo) {
-        // Websocket mode: sync once if a spin is already in progress on load.
-        if (config.spinInProgress) {
-            fetchActive().then((d) => {
-                if (d?.active && d.spin) {
-                    setBusy(true);
-                    setHint(`${d.spin.player_display || 'Another player'} is spinning…`);
-                    controller.run(d.spin);
-                }
-            });
-        }
-    } else {
-        // Polling mode: keep the waiting/eligibility state fresh and mirror
-        // another player's spin without websockets.
-        let mirroringId = null;
-        const poll = async () => {
-            if (mySpinId) return; // I'm spinning — don't interfere.
-            const d = await fetchActive();
-            if (d?.active && d.spin) {
-                if (mirroringId !== d.spin.spin_session_id) {
-                    mirroringId = d.spin.spin_session_id;
-                    setBusy(true);
-                    setHint(`${d.spin.player_display || 'Another player'} is spinning…`);
-                    controller.run(d.spin);
-                }
-            } else {
-                if (mirroringId) { mirroringId = null; setHint(''); }
-                setBusy(false);
-                refreshEligibility();
+    let mirroredSpinId = null;
+    async function poll() {
+        if (mySpinId && spinning) return;
+        const active = await fetchActive();
+        if (active?.active && active.spin && active.spin.spin_session_id !== mySpinId) {
+            eligibility.spin_in_progress = true;
+            if (mirroredSpinId !== active.spin.spin_session_id) {
+                mirroredSpinId = active.spin.spin_session_id;
+                spinning = true;
+                controller.run(active.spin, {
+                    onSegment: showSegment,
+                    onComplete: () => {
+                        spinning = false;
+                        refreshEligibility();
+                    },
+                });
             }
-        };
-        poll();
-        setInterval(poll, 4000);
+        } else {
+            mirroredSpinId = null;
+            await refreshEligibility();
+        }
+        renderState();
     }
+
+    renderState();
+    showSegment(0); // resting prize under the pointer
+    poll();
+    setInterval(poll, 3000);
 }

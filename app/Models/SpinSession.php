@@ -27,7 +27,8 @@ class SpinSession extends Model
         'prize_id',
         'status',
         'started_at',
-        'ends_at',
+       'ends_at',
+        'buffer_ends_at',
         'completed_at',
         'expires_at',
         'spin_duration_ms',
@@ -41,7 +42,8 @@ class SpinSession extends Model
 
     protected $casts = [
         'started_at' => 'datetime',
-        'ends_at' => 'datetime',
+       'ends_at' => 'datetime',
+        'buffer_ends_at' => 'datetime',
         'completed_at' => 'datetime',
         'expires_at' => 'datetime',
         'spin_duration_ms' => 'integer',

@@ -39,6 +39,12 @@ class Settings
             'branding.app_name' => config('app.name'),
             'branding.tagline' => 'Spin to win amazing prizes!',
             'branding.terms' => '',
+
+            // Image confetti (confettea) layered on top of the normal confetti.
+            'celebration.image_enabled' => false,
+            'celebration.image_path' => null,
+            'celebration.image_count' => 30,
+            'celebration.image_size' => 44,
         ];
     }
 

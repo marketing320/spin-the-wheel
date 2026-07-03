@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Services\SpinLockService;
+use App\Services\SpinQueueService;
 use App\Services\SpinService;
 use App\Services\WheelAnimationService;
 use App\Support\Settings;
@@ -20,6 +21,7 @@ class LiveViewController extends Controller
         protected WheelAnimationService $animation,
         protected SpinLockService $lock,
         protected SpinService $spins,
+        protected SpinQueueService $queue,
     ) {}
 
     public function index(): View
@@ -35,6 +37,7 @@ class LiveViewController extends Controller
                 'branding' => Settings::get('live_view.branding'),
                 'auto_reset_seconds' => (int) Settings::get('live_view.auto_reset_seconds', 12),
             ],
+            'queue' => $this->queue->snapshot($campaign),
         ]);
     }
 
@@ -44,14 +47,16 @@ class LiveViewController extends Controller
     public function active(): JsonResponse
     {
         $session = $this->lock->currentActive();
+        $queue = $this->queue->snapshot(Campaign::current());
 
         if (! $session) {
-            return response()->json(['active' => false]);
+            return response()->json(['active' => false, 'queue' => $queue]);
         }
 
         return response()->json([
             'active' => true,
             'spin' => $this->spins->buildStartedPayload($session),
+            'queue' => $queue,
         ]);
     }
 }

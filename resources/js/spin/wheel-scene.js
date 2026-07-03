@@ -5,6 +5,9 @@ import * as THREE from 'three';
  * subtle 3D stage when WebGL is available (flat-shaded, no gradients/glow,
  * nearest-neighbour "pixelated" texture) and falls back to a rotated 2D canvas.
  *
+ * Segments show the prize NAME in a large, readable pixel font (no images on
+ * the wheel — the prize image is shown in the live pointer display instead).
+ *
  * Layout convention (must match App\Services\WheelAnimationService):
  *   segment i occupies clockwise angles [i*seg, (i+1)*seg) starting at the top.
  *   Rotating the wheel clockwise by R degrees brings segment
@@ -55,21 +58,25 @@ function drawWheelFace(segments, size) {
         ctx.strokeStyle = INK;
         ctx.stroke();
 
-        // Label in the arcade/pixel font, colour chosen for contrast.
+        // Big, readable prize name running along the radius.
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(a0 + seg / 2);
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = contrastColor(color);
-        const fontSize = Math.max(14, Math.min(30, (r * 0.8) / Math.max(6, String(s.label).length)));
-        ctx.font = `700 ${Math.round(fontSize)}px "Pixelify Sans", ui-monospace, monospace`;
+        ctx.shadowColor = 'rgba(0,0,0,0.28)';
+        ctx.shadowBlur = 3;
         const label = String(s.label ?? '');
-        ctx.fillText(label.length > 16 ? label.slice(0, 15) + '…' : label, r - border * 4, 0);
+        const shown = label.length > 14 ? label.slice(0, 13) + '…' : label;
+        const fontSize = Math.max(22, Math.min(48, (r * 0.92) / Math.max(5, shown.length)));
+        ctx.font = `700 ${Math.round(fontSize)}px "Pixelify Sans", ui-monospace, monospace`;
+        ctx.fillText(shown, r - border * 3, 0);
         ctx.restore();
     }
 
     // Thick ink outer ring.
+    ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.lineWidth = border * 2;
@@ -79,7 +86,7 @@ function drawWheelFace(segments, size) {
     return canvas;
 }
 
-function makePixelTexture(canvas, renderer) {
+function makePixelTexture(canvas) {
     const texture = new THREE.CanvasTexture(canvas);
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
@@ -94,6 +101,7 @@ class ThreeWheel {
         this.container = container;
         this.segments = segments;
         this.rotationDeg = 0;
+        this._redrawQueued = false;
 
         const size = Math.min(container.clientWidth || 360, container.clientHeight || 360) || 360;
 
@@ -107,18 +115,16 @@ class ThreeWheel {
 
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-        this.camera.position.set(0, 0, 6.2);
+        this.camera.position.set(0, 0, 5.1); // close in so the disc nearly fills the stage
 
         this.wheelGroup = new THREE.Group();
         this.scene.add(this.wheelGroup);
 
-        // Flat-shaded textured disc that spins (no gradients, no lighting).
-        this.canvas = drawWheelFace(segments, 512);
-        const texture = makePixelTexture(this.canvas, this.renderer);
-        this.texture = texture;
+        this.canvas = drawWheelFace(segments, 700);
+        this.texture = makePixelTexture(this.canvas);
         this.face = new THREE.Mesh(
-            new THREE.CircleGeometry(2, 72),
-            new THREE.MeshBasicMaterial({ map: texture, transparent: true })
+            new THREE.CircleGeometry(2, 96),
+            new THREE.MeshBasicMaterial({ map: this.texture, transparent: true })
         );
         this.wheelGroup.add(this.face);
 
@@ -131,17 +137,23 @@ class ThreeWheel {
 
         // Redraw once the pixel font has loaded so labels use it.
         if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(() => {
-                const redrawn = drawWheelFace(this.segments, 512);
-                this.texture.image = redrawn;
-                this.texture.needsUpdate = true;
-            });
+            document.fonts.ready.then(() => this._scheduleRedraw());
         }
 
         this._onResize = () => this.resize();
         window.addEventListener('resize', this._onResize);
         this._animate = this._animate.bind(this);
         this._animate();
+    }
+
+    _scheduleRedraw() {
+        if (this._redrawQueued) return;
+        this._redrawQueued = true;
+        requestAnimationFrame(() => {
+            this._redrawQueued = false;
+            this.texture.image = drawWheelFace(this.segments, 700);
+            this.texture.needsUpdate = true;
+        });
     }
 
     _animate() {
@@ -170,8 +182,8 @@ class CanvasWheel {
     constructor(container, segments) {
         this.segments = segments;
         this.rotationDeg = 0;
-        const size = Math.min(container.clientWidth || 360, container.clientHeight || 360) || 360;
-        const canvas = drawWheelFace(segments, Math.min(size * 2, 900));
+        this._size = Math.min((container.clientWidth || 360) * 2, 1000);
+        const canvas = drawWheelFace(segments, this._size);
         canvas.style.width = '100%';
         canvas.style.height = '100%';
         canvas.style.borderRadius = '50%';
@@ -180,13 +192,15 @@ class CanvasWheel {
         this.canvas = canvas;
 
         if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(() => {
-                const ctx = this.canvas.getContext('2d');
-                const fresh = drawWheelFace(this.segments, this.canvas.width);
-                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                ctx.drawImage(fresh, 0, 0);
-            });
+            document.fonts.ready.then(() => this._redraw());
         }
+    }
+
+    _redraw() {
+        const ctx = this.canvas.getContext('2d');
+        const fresh = drawWheelFace(this.segments, this._size);
+        ctx.clearRect(0, 0, this._size, this._size);
+        ctx.drawImage(fresh, 0, 0);
     }
 
     setRotationDegrees(deg) {

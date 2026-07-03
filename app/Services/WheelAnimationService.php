@@ -67,9 +67,9 @@ class WheelAnimationService
 
     public function durationMs(Campaign $campaign): int
     {
-        $fromCampaign = data_get($campaign->settings, 'wheel.animation_duration_ms');
-
-        return (int) ($fromCampaign ?: Settings::get('spin.default_duration_ms', 6500));
+        // Authoritative spin length (ms), shared by the animation and the
+        // soundtrack. Sourced from the admin-configurable default.
+        return (int) Settings::get('spin.default_duration_ms', config('spin.spin.default_duration_ms', 8000));
     }
 
     public function newSeed(): string

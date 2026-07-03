@@ -4,116 +4,190 @@ import { SpinController } from './spin-controller';
 import { fireConfetti } from './confetti-controller';
 import { subscribeToSpins } from './live-sync';
 
-/**
- * Public live-view / event-screen entry. Mirrors the active player spin in
- * realtime via broadcast events, with a polling fallback so the screen still
- * works when the Reverb websocket server is not running.
- */
 function initLiveView() {
-    const el = document.getElementById('live-config');
-    if (!el) return;
-    const config = JSON.parse(el.textContent);
+    const configElement = document.getElementById('live-config');
+    if (!configElement) return;
+    const config = JSON.parse(configElement.textContent);
 
     const stage = document.getElementById('wheel-stage');
+    const pointer = document.getElementById('live-wheel-pointer');
     let wheel = createWheel(stage, config.segments || []);
-    const controller = new SpinController(wheel);
-
+    const controller = new SpinController(wheel, { pointer, soundUrl: config.soundUrl });
     const idle = document.getElementById('idle-screen');
-    const nameEl = document.getElementById('current-player');
+    const playerName = document.getElementById('current-player');
     const reveal = document.getElementById('prize-reveal');
     const revealName = document.getElementById('reveal-prize-name');
     const revealRarity = document.getElementById('reveal-rarity');
     const revealImage = document.getElementById('reveal-prize-image');
+    const queueCount = document.getElementById('queue-count');
+    const queueList = document.getElementById('queue-list');
+    const soundOverlay = document.getElementById('enable-sound-overlay');
+    const soundButton = document.getElementById('enable-sound-button');
+
+    // Live prize display above the pointer — shows whatever is under it.
+    const prizeChip = document.getElementById('pointer-prize-chip');
+    const prizeImage = document.getElementById('pointer-prize-image');
+    const prizeIcon = document.getElementById('pointer-prize-icon');
+    const prizeName = document.getElementById('pointer-prize-name');
+    let currentSegments = config.segments || [];
+
+    function showSegment(index) {
+        const seg = currentSegments[index];
+        if (!seg || !prizeName) return;
+        prizeName.textContent = seg.label || '';
+        if (prizeChip) prizeChip.style.background = seg.color || '#0e75bc';
+        if (prizeImage && prizeIcon) {
+            const hasImage = Boolean(seg.image);
+            prizeImage.classList.toggle('hidden', !hasImage);
+            prizeIcon.classList.toggle('hidden', hasImage);
+            if (hasImage) prizeImage.src = seg.image;
+        }
+    }
 
     let currentSpinId = null;
+    let revealedSpinId = null;
     let lastPayload = null;
     let resetTimer = null;
 
     const show = (node) => { node?.classList.remove('hidden'); node?.classList.add('flex'); };
     const hide = (node) => { node?.classList.add('hidden'); node?.classList.remove('flex'); };
 
+    function renderQueue(queue = { count: 0, players: [] }) {
+        if (queueCount) queueCount.textContent = String(queue.count || 0);
+        if (!queueList) return;
+        queueList.replaceChildren();
+
+        if (!Array.isArray(queue.players) || queue.players.length === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'text-slate-400';
+            empty.textContent = 'No players waiting';
+            queueList.appendChild(empty);
+            return;
+        }
+
+        queue.players.forEach((queuedPlayer) => {
+            const row = document.createElement('li');
+            row.className = 'flex items-center gap-3 rounded-lg bg-slate-100 px-3 py-2';
+            const position = document.createElement('span');
+            position.className = 'font-display text-xs text-brand-600';
+            position.textContent = `#${queuedPlayer.position}`;
+            const name = document.createElement('span');
+            name.className = 'min-w-0 truncate font-semibold text-slate-700';
+            name.textContent = queuedPlayer.name || 'Player';
+            row.append(position, name);
+            queueList.appendChild(row);
+        });
+    }
+
     function toIdle() {
         currentSpinId = null;
+        revealedSpinId = null;
         lastPayload = null;
         hide(reveal);
         show(idle);
-        if (nameEl) nameEl.textContent = '';
-    }
-
-    function handleStart(payload) {
-        if (!payload || payload.spin_session_id === currentSpinId) return;
-        clearTimeout(resetTimer);
-        currentSpinId = payload.spin_session_id;
-        lastPayload = payload;
-
-        // Rebuild the wheel with the authoritative segments for this spin.
-        if (Array.isArray(payload.wheel_segments) && payload.wheel_segments.length) {
-            wheel = createWheel(stage, payload.wheel_segments);
-            controller.wheel = wheel;
-        }
-
-        hide(idle);
-        hide(reveal);
-        if (nameEl) nameEl.textContent = payload.player_display || '';
-        controller.run(payload);
+        if (playerName) playerName.textContent = '';
+        currentSegments = config.segments || [];
+        showSegment(0);
     }
 
     function handleComplete(payload) {
         const data = payload || lastPayload;
         if (!data) return;
+        if (revealedSpinId === data.spin_session_id) return;
+        revealedSpinId = data.spin_session_id;
         if (revealName) revealName.textContent = data.prize_name || 'A prize!';
-        if (revealRarity && data.prize_rarity) {
-            revealRarity.textContent = data.prize_rarity;
-        }
+        if (revealRarity) revealRarity.textContent = data.prize_rarity || '';
         if (revealImage) {
-            if (data.prize_image) {
-                revealImage.src = data.prize_image;
-                revealImage.classList.remove('hidden');
-            } else {
-                revealImage.classList.add('hidden');
-            }
+            revealImage.classList.toggle('hidden', !data.prize_image);
+            if (data.prize_image) revealImage.src = data.prize_image;
         }
+        hide(idle);
         show(reveal);
-        fireConfetti(data.confetti_level || 'medium');
+        fireConfetti(data.confetti_level || 'medium', {
+            image: data.confetti_image,
+            imageCount: data.confetti_image_count,
+            imageSize: data.confetti_image_size,
+        });
 
         clearTimeout(resetTimer);
         resetTimer = setTimeout(toIdle, (config.settings.auto_reset_seconds || 12) * 1000);
     }
 
+    function handleStart(payload) {
+        if (!payload || payload.spin_session_id === currentSpinId) return;
+        clearTimeout(resetTimer);
+        resetTimer = null;
+        currentSpinId = payload.spin_session_id;
+        revealedSpinId = null;
+        lastPayload = payload;
+
+        if (Array.isArray(payload.wheel_segments) && payload.wheel_segments.length) {
+            wheel?.dispose?.();
+            wheel = createWheel(stage, payload.wheel_segments);
+            controller.wheel = wheel;
+            currentSegments = payload.wheel_segments;
+        }
+
+        hide(idle);
+        hide(reveal);
+        if (playerName) playerName.textContent = payload.player_display || '';
+
+        if (payload.phase === 'buffer') {
+            controller.run(payload, { onSegment: showSegment });
+            handleComplete(payload);
+            return;
+        }
+
+        controller.run(payload, { onSegment: showSegment, onComplete: () => handleComplete(payload) });
+    }
+
     function handleExpired() {
         clearTimeout(resetTimer);
+        controller.stop();
         toIdle();
     }
+
+    soundButton?.addEventListener('click', async () => {
+        soundButton.disabled = true;
+        const unlocked = await controller.audio.unlock();
+        soundButton.disabled = false;
+        if (!unlocked) return;
+        hide(soundOverlay);
+        if (lastPayload) controller.run(lastPayload);
+    });
 
     subscribeToSpins({
         onStarted: handleStart,
         onCompleted: handleComplete,
         onExpired: handleExpired,
+        onQueueUpdated: renderQueue,
     });
 
-    // Sync if a spin is already active when the screen loads.
     const fetchActive = () => fetch(config.routes.active, { headers: { Accept: 'application/json' } })
-        .then((r) => r.json())
+        .then((response) => response.json())
         .catch(() => null);
 
-    fetchActive().then((d) => { if (d?.active && d.spin) handleStart(d.spin); });
-
-    // Polling fallback (covers a down websocket server): detect spin start/end.
-    setInterval(async () => {
-        const d = await fetchActive();
-        if (!d) return;
-        if (d.active && d.spin && d.spin.spin_session_id !== currentSpinId) {
-            handleStart(d.spin);
-        } else if (!d.active && currentSpinId && !resetTimer) {
+    async function sync() {
+        const data = await fetchActive();
+        if (!data) return;
+        renderQueue(data.queue);
+        if (data.active && data.spin) {
+            if (data.spin.spin_session_id !== currentSpinId) handleStart(data.spin);
+        } else if (currentSpinId && !resetTimer) {
             handleComplete(lastPayload);
         }
-    }, 3000);
+    }
+
+    renderQueue(config.queue);
+    showSegment(0); // resting prize under the pointer
+    sync();
+    setInterval(sync, 3000);
 }
 
 function boot() {
-    const el = document.getElementById('live-config');
-    if (!el || el.dataset.inited) return;
-    el.dataset.inited = '1';
+    const element = document.getElementById('live-config');
+    if (!element || element.dataset.inited) return;
+    element.dataset.inited = '1';
     initLiveView();
 }
 

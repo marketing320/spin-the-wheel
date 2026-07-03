@@ -1,20 +1,19 @@
+import { SpinAudio } from './spin-audio';
+import { buildPhysicsTimeline } from './wheel-physics';
+
 /**
- * Drives the wheel animation from a server payload. Uses server-aligned time so
- * the player phone and the live-view screen render the SAME rotation at the
- * SAME wall-clock moment — and a screen that joins mid-spin jumps to the
- * correct elapsed position and continues smoothly.
+ * Drives a deterministic Matter.js scene from server-aligned time so the
+ * player page and live view render the same physical state at the same moment.
  */
-
-const easeOutQuart = (p) => 1 - Math.pow(1 - p, 4);
-
 export class SpinController {
-    constructor(wheel) {
+    constructor(wheel, { pointer = null, soundUrl = null, onAudioBlocked = null } = {}) {
         this.wheel = wheel;
-        this.clockOffset = 0; // clientNow - serverNow
+        this.pointer = pointer;
+        this.audio = new SpinAudio(soundUrl, { onBlocked: onAudioBlocked });
+        this.clockOffset = 0;
         this.raf = null;
     }
 
-    /** Align our clock to the server using the payload's server_time. */
     syncClock(payload) {
         if (payload?.server_time) {
             this.clockOffset = Date.now() - Date.parse(payload.server_time);
@@ -25,30 +24,53 @@ export class SpinController {
         return Date.now() - this.clockOffset;
     }
 
-    /**
-     * Animate to the payload's final angle. Resolves (and calls onComplete)
-     * when the spin's end time is reached.
-     */
-    run(payload, { onComplete, onProgress } = {}) {
+    /** Index of the segment currently under the top pointer for a rotation. */
+    static segmentAt(wheelDeg, segmentCount) {
+        if (!segmentCount || segmentCount < 1) return 0;
+        const seg = 360 / segmentCount;
+        const norm = (((360 - (wheelDeg % 360)) % 360) + 360) % 360;
+        return Math.floor(norm / seg) % segmentCount;
+    }
+
+    run(payload, { onComplete, onProgress, onSegment } = {}) {
         this.syncClock(payload);
         cancelAnimationFrame(this.raf);
 
         const startMs = Date.parse(payload.started_at_server);
-        const duration = Math.max(1, payload.spin_duration_ms || 6500);
+        const duration = Math.max(1, payload.spin_duration_ms || 8000);
+        const soundDuration = Math.max(duration, payload.sound_duration_ms || 11000);
         const finalAngle = payload.final_angle || 0;
+        const segmentCount = payload.wheel_segments?.length || payload.segment_count || 1;
+        const physics = buildPhysicsTimeline(finalAngle, duration, segmentCount);
+        const initialElapsed = Math.max(0, this.serverNow() - startMs);
+
+        if (initialElapsed < soundDuration) this.audio.playAt(initialElapsed);
+
+        let lastSegment = -1;
+        const emitSegment = (wheelDeg) => {
+            const index = SpinController.segmentAt(wheelDeg, segmentCount);
+            if (index !== lastSegment) {
+                lastSegment = index;
+                onSegment?.(index);
+            }
+        };
 
         const tick = () => {
             const elapsed = this.serverNow() - startMs;
-            const p = Math.min(Math.max(elapsed / duration, 0), 1);
-            const angle = finalAngle * easeOutQuart(p);
+            const progress = Math.min(Math.max(elapsed / duration, 0), 1);
+            const state = physics.sample(progress);
 
-            this.wheel?.setRotationDegrees(angle);
-            onProgress?.(p);
+            this.wheel?.setRotationDegrees(state.wheelDeg);
+            if (this.pointer) this.pointer.style.rotate = `${state.pointerDeg}deg`;
+            emitSegment(state.wheelDeg);
+            onProgress?.(progress);
 
-            if (p < 1) {
+            if (progress < 1) {
                 this.raf = requestAnimationFrame(tick);
             } else {
                 this.wheel?.setRotationDegrees(finalAngle);
+                if (this.pointer) this.pointer.style.rotate = '0deg';
+                emitSegment(finalAngle);
                 onComplete?.();
             }
         };
@@ -58,5 +80,6 @@ export class SpinController {
 
     stop() {
         cancelAnimationFrame(this.raf);
+        this.audio.stop();
     }
 }

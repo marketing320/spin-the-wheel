@@ -120,13 +120,13 @@ class Prizes extends Component
 
         $this->reset('image');
         $this->showModal = false;
-        session()->flash('status', $this->editingId ? 'Prize updated.' : 'Prize created.');
+        $this->dispatch('admin-toast', message: $this->editingId ? 'Prize updated.' : 'Prize created.');
     }
 
     public function delete(int $id): void
     {
         Prize::findOrFail($id)->delete();
-        session()->flash('status', 'Prize deleted.');
+        $this->dispatch('admin-toast', message: 'Prize deleted.');
     }
 
     public function render(PrizeSelectionService $prizeService)

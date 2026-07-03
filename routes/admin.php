@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\Admin\PlayerExportController;
 use App\Http\Controllers\Admin\SpinExportController;
 use App\Livewire\Admin\Campaigns;
 use App\Livewire\Admin\Dashboard;
@@ -34,6 +35,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/spins', Spins::class)->name('admin.spins');
         Route::get('/spins/export', [SpinExportController::class, 'export'])->name('admin.spins.export');
         Route::get('/players', Players::class)->name('admin.players');
+        Route::get('/players/export', [PlayerExportController::class, 'export'])->name('admin.players.export');
         Route::get('/settings', Settings::class)->name('admin.settings');
     });
 });

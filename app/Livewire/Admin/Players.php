@@ -20,9 +20,29 @@ class Players extends Component
 
     public ?int $viewingId = null;
 
+    /** Explicitly ticked player IDs (used when not selecting everything). */
+    public array $selected = [];
+
+    /** When true, the export targets every player matching the search. */
+    public bool $selectAllMatching = false;
+
     public function updatingSearch(): void
     {
         $this->resetPage();
+        $this->clearSelection();
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selected = [];
+        $this->selectAllMatching = false;
+    }
+
+    private function baseQuery()
+    {
+        return Player::query()->when($this->search, fn ($q) => $q
+            ->where('email', 'like', "%{$this->search}%")
+            ->orWhere('display_name', 'like', "%{$this->search}%"));
     }
 
     public function view(int $id): void
@@ -36,17 +56,15 @@ class Players extends Component
         $player = Player::findOrFail($id);
         $player->forceFill(['blocked_at' => $player->blocked_at ? null : now()])->save();
 
-        session()->flash('status', $player->blocked_at
+        $this->dispatch('admin-toast', message: $player->blocked_at
             ? "{$player->email} has been blocked."
             : "{$player->email} has been unblocked.");
     }
 
     public function render()
     {
-        $players = Player::withCount('spinSessions')
-            ->when($this->search, fn ($q) => $q
-                ->where('email', 'like', "%{$this->search}%")
-                ->orWhere('display_name', 'like', "%{$this->search}%"))
+        $players = $this->baseQuery()
+            ->withCount('spinSessions')
             ->latest()
             ->paginate(20);
 
@@ -60,6 +78,7 @@ class Players extends Component
         return view('livewire.admin.players', [
             'players' => $players,
             'viewingPlayer' => $viewingPlayer,
+            'total' => $this->baseQuery()->count(),
         ]);
     }
 }

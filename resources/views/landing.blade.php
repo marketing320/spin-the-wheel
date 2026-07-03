@@ -24,7 +24,7 @@
                     @if ($player && $player->hasCompletedForm())
                         <a href="{{ route('spin') }}" class="btn-primary animate-pulse-glow text-lg"><i data-lucide="ferris-wheel" class="h-5 w-5"></i> Spin the wheel</a>
                     @else
-                        <a href="{{ route('player.register') }}" wire:navigate class="btn-primary animate-pulse-glow text-lg"><i data-lucide="play" class="h-5 w-5"></i> Play now — it's free</a>
+                        <a href="{{ route('player.register') }}" wire:navigate class="btn-primary animate-pulse-glow text-lg"><i data-lucide="play" class="h-5 w-5"></i> Play now</a>
                     @endif
                     <a href="{{ route('live-view') }}" target="_blank" class="btn-ghost text-lg"><i data-lucide="tv" class="h-5 w-5"></i> Watch live</a>
                 </div>
@@ -53,7 +53,7 @@
                 </div>
             @endif
 
-            {{-- How it works --}}
+            {{-- How it works 
             <div class="mx-auto mt-16 max-w-3xl">
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     @foreach ([
@@ -70,7 +70,7 @@
                         </div>
                     @endforeach
                 </div>
-            </div>
+            </div>--}}
         @else
             <div class="mx-auto max-w-md text-center">
                 <div class="mx-auto grid h-20 w-20 place-items-center rounded-2xl border-[3px] border-slate-900 bg-brand-500 pixel-shadow">

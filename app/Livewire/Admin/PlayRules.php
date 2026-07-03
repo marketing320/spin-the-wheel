@@ -82,7 +82,7 @@ class PlayRules extends Component
         $campaign = Campaign::current();
 
         if (! $campaign) {
-            session()->flash('status', 'No active campaign to attach rules to.');
+            $this->dispatch('admin-toast', message: 'No active campaign to attach rules to.');
             $this->showModal = false;
 
             return;
@@ -101,13 +101,13 @@ class PlayRules extends Component
         );
 
         $this->showModal = false;
-        session()->flash('status', $this->editingId ? 'Play rule updated.' : 'Play rule created.');
+        $this->dispatch('admin-toast', message: $this->editingId ? 'Play rule updated.' : 'Play rule created.');
     }
 
     public function delete(int $id): void
     {
         PlayRule::findOrFail($id)->delete();
-        session()->flash('status', 'Play rule deleted.');
+        $this->dispatch('admin-toast', message: 'Play rule deleted.');
     }
 
     public function render()

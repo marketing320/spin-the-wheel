@@ -129,7 +129,7 @@ class FormsBuilder extends Component
         $campaign = Campaign::current();
 
         if (! $campaign) {
-            session()->flash('status', 'No active campaign to attach fields to.');
+            $this->dispatch('admin-toast', message: 'No active campaign to attach fields to.');
             $this->showModal = false;
 
             return;
@@ -159,13 +159,13 @@ class FormsBuilder extends Component
         ]);
 
         $this->showModal = false;
-        session()->flash('status', $this->editingId ? 'Field updated.' : 'Field added.');
+        $this->dispatch('admin-toast', message: $this->editingId ? 'Field updated.' : 'Field added.');
     }
 
     public function delete(int $id): void
     {
         FormField::findOrFail($id)->delete();
-        session()->flash('status', 'Field deleted.');
+        $this->dispatch('admin-toast', message: 'Field deleted.');
     }
 
     public function render()

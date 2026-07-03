@@ -81,7 +81,7 @@ class Campaigns extends Component
         Campaign::updateOrCreate(['id' => $this->editingId], $data);
 
         $this->showModal = false;
-        session()->flash('status', $this->editingId ? 'Campaign updated.' : 'Campaign created.');
+        $this->dispatch('admin-toast', message: $this->editingId ? 'Campaign updated.' : 'Campaign created.');
     }
 
     public function activate(int $id): void
@@ -89,13 +89,13 @@ class Campaigns extends Component
         Campaign::query()->update(['active' => false]);
         $campaign = Campaign::findOrFail($id);
         $campaign->update(['active' => true, 'status' => Campaign::STATUS_ACTIVE]);
-        session()->flash('status', "“{$campaign->name}” is now the active campaign.");
+        $this->dispatch('admin-toast', message: "“{$campaign->name}” is now the active campaign.");
     }
 
     public function delete(int $id): void
     {
         Campaign::findOrFail($id)->delete();
-        session()->flash('status', 'Campaign deleted.');
+        $this->dispatch('admin-toast', message: 'Campaign deleted.');
     }
 
     public function render()

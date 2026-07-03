@@ -11,7 +11,10 @@ class ExampleTest extends TestCase
 
     public function test_the_landing_page_loads(): void
     {
-        $response = $this->get('/');
+        $response = $this->withHeader(
+            'User-Agent',
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile'
+        )->get('/');
 
         $response->assertStatus(200);
     }

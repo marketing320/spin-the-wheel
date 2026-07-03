@@ -25,6 +25,17 @@ class SpinLockService
      */
     public function expireStale(): int
     {
+        $buffers = SpinSession::query()
+            ->where('status', SpinSession::STATUS_ACTIVE)
+            ->whereNotNull('completed_at')
+            ->whereNotNull('buffer_ends_at')
+            ->where('buffer_ends_at', '<=', now())
+            ->get();
+
+        foreach ($buffers as $session) {
+            $this->release($session);
+        }
+
         $stale = SpinSession::query()
             ->where('status', SpinSession::STATUS_ACTIVE)
             ->whereNotNull('expires_at')
@@ -40,7 +51,7 @@ class SpinLockService
             broadcast(new SpinExpired($session->id, 'timeout'));
         }
 
-        return $stale->count();
+        return $buffers->count() + $stale->count();
     }
 
     /**

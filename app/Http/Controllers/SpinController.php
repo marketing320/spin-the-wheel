@@ -6,6 +6,7 @@ use App\Models\Campaign;
 use App\Models\SpinSession;
 use App\Services\SpinEligibilityService;
 use App\Services\SpinLockService;
+use App\Services\SpinQueueService;
 use App\Services\WheelAnimationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,7 @@ class SpinController extends Controller
         protected WheelAnimationService $animation,
         protected SpinEligibilityService $eligibility,
         protected SpinLockService $lock,
+        protected SpinQueueService $queue,
     ) {}
 
     public function index(): View
@@ -28,6 +30,7 @@ class SpinController extends Controller
         $segments = $this->animation->segments($campaign);
         $eligibility = $this->eligibility->check($player, $campaign);
         $active = $this->lock->currentActive();
+        $queue = $this->queue->status($campaign, $player);
 
         return view('spin', [
             'campaign' => $campaign,
@@ -36,6 +39,7 @@ class SpinController extends Controller
             'eligibility' => $eligibility,
             'geofenceEnabled' => (bool) ($campaign->geofenceSetting?->enabled),
             'spinInProgress' => $active !== null && $active->player_id !== $player->id,
+            'queue' => $queue,
         ]);
     }
 

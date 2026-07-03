@@ -6,6 +6,7 @@ use App\Events\SpinCompleted;
 use App\Events\SpinStarted;
 use App\Exceptions\SpinException;
 use App\Jobs\CompleteSpinJob;
+use App\Jobs\ReleaseSpinJob;
 use App\Models\Campaign;
 use App\Models\Player;
 use App\Models\Prize;
@@ -47,7 +48,7 @@ class SpinService
 
         // Idempotency: if this player already holds the active spin, return it.
         $existing = $this->lock->currentActive();
-        if ($existing && $existing->player_id === $player->id) {
+        if ($existing && $existing->player_id === $player->id && ! $existing->completed_at) {
             return $existing;
         }
 
@@ -77,6 +78,8 @@ class SpinService
         // 5. Failsafe completion even if the player disconnects.
         CompleteSpinJob::dispatch($session->id)
             ->delay(now()->addMilliseconds($session->spin_duration_ms + 500));
+        ReleaseSpinJob::dispatch($session->id)
+            ->delay($session->buffer_ends_at->copy()->addMilliseconds(500));
 
         return $session;
     }
@@ -124,6 +127,7 @@ class SpinService
                 $segments = $this->animation->segments($campaign, $lockedPrizes->values());
                 $targetIndex = $this->animation->indexOfPrize($segments, $prize->id);
                 $duration = $this->animation->durationMs($campaign);
+                $bufferDuration = (int) config('spin.spin.buffer_duration_ms', 7000);
                 $finalAngle = $this->animation->finalAngleFor($targetIndex, count($segments));
 
                 $session->forceFill([
@@ -132,6 +136,7 @@ class SpinService
                     'spin_duration_ms' => $duration,
                     'animation_seed' => $this->animation->newSeed(),
                     'ends_at' => $startedAt->copy()->addMilliseconds($duration),
+                    'buffer_ends_at' => $startedAt->copy()->addMilliseconds($duration + $bufferDuration),
                     'metadata' => [
                         'segments' => $segments,
                         'target_index' => $targetIndex,
@@ -157,7 +162,7 @@ class SpinService
      */
     public function complete(SpinSession $session): SpinSession
     {
-        if ($session->status === SpinSession::STATUS_COMPLETED) {
+        if ($session->completed_at || $session->status === SpinSession::STATUS_COMPLETED) {
             return $session;
         }
 
@@ -168,9 +173,7 @@ class SpinService
 
         DB::transaction(function () use ($session) {
             $session->forceFill([
-                'status' => SpinSession::STATUS_COMPLETED,
                 'completed_at' => now(),
-                'active_guard' => null,
             ])->save();
 
             if ($session->prize_id) {
@@ -192,6 +195,21 @@ class SpinService
     }
 
     /**
+     * Public URL of the admin-configured celebration confetti image, or null
+     * when the feature is disabled / no image uploaded.
+     */
+    protected function celebrationImageUrl(): ?string
+    {
+        if (! Settings::get('celebration.image_enabled')) {
+            return null;
+        }
+
+        $path = Settings::get('celebration.image_path');
+
+        return $path ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function buildStartedPayload(SpinSession $session): array
@@ -208,11 +226,18 @@ class SpinService
             'prize_rarity' => $prize?->rarity,
             'prize_image' => $prize?->imageUrl(),
             'confetti_level' => $prize?->confetti_level,
+            'confetti_image' => $this->celebrationImageUrl(),
+            'confetti_image_count' => (int) Settings::get('celebration.image_count', 30),
+            'confetti_image_size' => (int) Settings::get('celebration.image_size', 44),
+            'redemption_message' => $prize?->redemption_message,
             'wheel_segments' => $segments,
             'final_angle' => (float) $session->final_angle,
             'spin_duration_ms' => (int) $session->spin_duration_ms,
+            'sound_duration_ms' => (int) config('spin.spin.sound_duration_ms', 11000),
             'started_at_server' => $session->started_at?->toIso8601String(),
             'ends_at_server' => $session->ends_at?->toIso8601String(),
+            'buffer_ends_at_server' => $session->buffer_ends_at?->toIso8601String(),
+            'phase' => $session->completed_at ? 'buffer' : 'spinning',
             'animation_seed' => $session->animation_seed,
             'server_time' => now()->toIso8601String(),
         ];
@@ -232,6 +257,9 @@ class SpinService
             'prize_rarity' => $prize?->rarity,
             'prize_image' => $prize?->imageUrl(),
             'confetti_level' => $prize?->confetti_level,
+            'confetti_image' => $this->celebrationImageUrl(),
+            'confetti_image_count' => (int) Settings::get('celebration.image_count', 30),
+            'confetti_image_size' => (int) Settings::get('celebration.image_size', 44),
             'redemption_message' => $prize?->redemption_message,
             'completed_at_server' => optional($session->completed_at ?? now())->toIso8601String(),
         ];

@@ -6,7 +6,7 @@
  * Returns an unsubscribe function. Safe to call even if Echo/Reverb is not
  * connected — the caller can additionally poll as a fallback.
  */
-export function subscribeToSpins({ onStarted, onCompleted, onExpired } = {}) {
+export function subscribeToSpins({ onStarted, onCompleted, onExpired, onQueueUpdated } = {}) {
     if (typeof window === 'undefined' || !window.Echo) {
         console.warn('Echo is not available; realtime sync disabled.');
         return () => {};
@@ -17,6 +17,7 @@ export function subscribeToSpins({ onStarted, onCompleted, onExpired } = {}) {
     if (onStarted) channel.listen('.spin.started', onStarted);
     if (onCompleted) channel.listen('.spin.completed', onCompleted);
     if (onExpired) channel.listen('.spin.expired', onExpired);
+    if (onQueueUpdated) channel.listen('.spin.queue-updated', onQueueUpdated);
 
     return () => {
         try {
