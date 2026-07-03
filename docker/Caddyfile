@@ -1,0 +1,20 @@
+{
+	{$CADDY_GLOBAL_OPTIONS}
+	frankenphp
+}
+
+# SERVER_NAME is provided by docker-compose. Set it to your domain
+# (e.g. spin.example.com) and FrankenPHP/Caddy provisions Let's Encrypt TLS
+# automatically. Use ":80" for plain HTTP (local / behind another proxy).
+{$SERVER_NAME:localhost} {
+	root * /app/public
+
+	encode zstd gzip
+
+	# Serves static files and routes everything else to Laravel's index.php.
+	php_server
+
+	# Long-cache the hashed Vite build assets.
+	@immutable path /build/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+}

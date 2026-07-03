@@ -113,6 +113,70 @@ host/port.) Keep `php artisan reverb:start` and `php artisan queue:work` running
 
 ---
 
+## 🐳 Deploy to a VPS with Docker
+
+The project ships a production Docker setup: **FrankenPHP** (embedded Caddy with automatic
+Let's Encrypt HTTPS) serving the app, a **queue worker**, and **MySQL 8** — all in one
+`docker-compose.yaml`. Cache/session/queue use the database, so no Redis is needed. Realtime runs
+in polling mode (`BROADCAST_CONNECTION=log`), so no Reverb container is required.
+
+**Prerequisites on the VPS (Ubuntu):** Docker Engine + the Compose plugin.
+
+```bash
+# One-time Docker install on Ubuntu
+curl -fsSL https://get.docker.com | sh
+```
+
+**Deploy:**
+
+```bash
+# 1. Get the code onto the server
+git clone <your-repo> spin-the-wheel && cd spin-the-wheel
+
+# 2. Create the production env file and edit it
+cp .env.production.example .env
+#    → set SERVER_NAME (your domain), DB_PASSWORD, DB_ROOT_PASSWORD, mail creds…
+
+# 3. Generate the app key (writes nothing yet — paste the value into .env's APP_KEY)
+docker compose run --rm app php artisan key:generate --show
+#    → copy the base64:... value into APP_KEY in .env
+
+# 4. Build and start everything
+docker compose up -d --build
+```
+
+That's it. On boot the `app` container waits for MySQL, runs `migrate --force`, links storage,
+caches config/views, and starts FrankenPHP. Point your domain's DNS **A record** at the VPS and
+Caddy auto-provisions TLS for `SERVER_NAME` on ports 80/443 (HTTP-01 challenge — the domain must
+resolve to the box and 80/443 must be open; if you front it with Cloudflare, use *DNS-only* or an
+Origin/Full-strict cert).
+
+**What runs**
+
+| Service | Role |
+|---|---|
+| `app` | FrankenPHP web server (80/443, auto-HTTPS) + migrations on start |
+| `queue` | `php artisan queue:work` — broadcasts + failsafe spin completion |
+| `db` | MySQL 8 (named volume `db-data`) |
+
+**Persistent data** lives in named volumes: `db-data` (database), `storage-app` (uploaded prize /
+celebration images), and `caddy-data` (TLS certificates).
+
+**Common operations**
+
+```bash
+docker compose logs -f app          # tail app logs (LOG_CHANNEL=stderr)
+docker compose exec app php artisan db:seed --force   # optional demo data
+docker compose exec app php artisan tinker
+docker compose down                 # stop (volumes/data preserved)
+git pull && docker compose up -d --build   # deploy an update (re-migrates automatically)
+```
+
+> To switch on true websockets later: run a Reverb container/command, set
+> `BROADCAST_CONNECTION=reverb` + `VITE_REVERB_ENABLED=true` (rebuild), and route `/app` to it.
+
+---
+
 ## 🔑 Demo accounts & routes
 
 After seeding:

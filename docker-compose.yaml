@@ -1,0 +1,73 @@
+# Spin The Wheel — production stack for a single VPS.
+#
+#   1. cp .env.production.example .env   (then fill in secrets + APP_KEY + SERVER_NAME)
+#   2. docker compose up -d --build
+#
+# The `app` service is FrankenPHP (embedded Caddy) and provisions Let's Encrypt
+# TLS automatically once SERVER_NAME is a real domain pointed at this host.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: spinthewheel:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      CONTAINER_ROLE: web
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - storage-app:/app/storage/app   # persisted uploads (prize / celebration images)
+      - caddy-data:/data               # TLS certificates
+      - caddy-config:/config
+    healthcheck:
+      test: ["CMD", "php", "artisan", "inspire"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  queue:
+    image: spinthewheel:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      CONTAINER_ROLE: queue
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command: ["php", "artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=120", "--max-time=3600"]
+    volumes:
+      - storage-app:/app/storage/app
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-spinthewheel}
+      MYSQL_USER: ${DB_USERNAME:-spinthewheel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-changeme}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-changeme-root}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  db-data:
+  storage-app:
+  caddy-data:
+  caddy-config:

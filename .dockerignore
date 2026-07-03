@@ -1,0 +1,33 @@
+# VCS & IDE
+.git
+.gitattributes
+.github
+.idea
+.vscode
+
+# Dependencies / build output (installed fresh in the image)
+node_modules
+vendor
+public/build
+public/hot
+
+# Environment & secrets (never bake into the image)
+.env
+.env.*
+!.env.production.example
+
+# Runtime storage (recreated at container start / mounted as a volume)
+public/storage
+storage/app/public/*
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/*.key
+
+# Local databases / misc
+database/*.sqlite
+Dockerfile
+docker-compose.yaml
+docker-compose.yml
+*.md
