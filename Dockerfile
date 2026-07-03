@@ -15,8 +15,10 @@ RUN npm run build
 # ---------------------------------------------------------------------------
 # Stage 2 — application runtime: FrankenPHP (embedded Caddy w/ auto-HTTPS).
 # The same image runs the web server and the queue worker.
+#
+# PHP 8.4 is required: composer.lock pins Symfony 8.1 (needs php >= 8.4.1).
 # ---------------------------------------------------------------------------
-FROM dunglas/frankenphp:php8.3 AS app
+FROM dunglas/frankenphp:php8.4 AS app
 
 # PHP extensions Laravel + this app need.
 RUN install-php-extensions \
