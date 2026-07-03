@@ -70,12 +70,13 @@ class DatabaseSeeder extends Seeder
 
     protected function seedPrizes(Campaign $campaign): void
     {
+        // Flat arcade palette (no gradients): blue, green, teal, purple, yellow.
         $prizes = [
-            ['Thank You Voucher', 'common', '#64748b', 55, 'light', 'Show this screen at the counter to claim your voucher.'],
-            ['Small Gift', 'uncommon', '#22c55e', 25, 'medium', 'Collect your gift at the registration desk.'],
-            ['Discount Voucher', 'rare', '#0ea5e9', 12, 'strong', 'Use code SPIN20 for 20% off your next purchase.'],
-            ['Premium Accessory', 'epic', '#a855f7', 6, 'heavy', 'Our team will contact you to arrange delivery.'],
-            ['Grand Prize', 'legendary', '#f59e0b', 2, 'max', 'Congratulations! Please see the event manager to claim your grand prize.'],
+            ['Thank You Voucher', 'common', '#0e75bc', 55, 'light', 'Show this screen at the counter to claim your voucher.'],
+            ['Small Gift', 'uncommon', '#24b26b', 25, 'medium', 'Collect your gift at the registration desk.'],
+            ['Discount Voucher', 'rare', '#12a5b0', 12, 'strong', 'Use code SPIN20 for 20% off your next purchase.'],
+            ['Premium Accessory', 'epic', '#7b5cff', 6, 'heavy', 'Our team will contact you to arrange delivery.'],
+            ['Grand Prize', 'legendary', '#f6c31c', 2, 'max', 'Congratulations! Please see the event manager to claim your grand prize.'],
         ];
 
         foreach ($prizes as $i => [$name, $rarity, $color, $weight, $confetti, $redemption]) {
@@ -155,7 +156,7 @@ class DatabaseSeeder extends Seeder
         Settings::setMany([
             'branding.app_name' => 'Spin The Wheel',
             'branding.tagline' => 'Spin to win amazing prizes — good luck!',
-            'live_view.idle_message' => 'Step up and spin to win! 🎉',
+            'live_view.idle_message' => 'Step up and spin to win!',
             'live_view.branding' => 'Spin The Wheel',
         ]);
     }

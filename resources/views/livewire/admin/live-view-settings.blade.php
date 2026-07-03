@@ -6,13 +6,13 @@
         <form wire:submit="save" class="space-y-6">
             <div class="space-y-4">
                 <div>
-                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Player privacy</h3>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-600">Player privacy</h3>
                     <p class="mt-0.5 text-xs text-slate-500">
                         Decide how much of the current player's identity appears on the big screen.
                     </p>
                 </div>
 
-                <label class="flex items-start gap-3 text-sm text-slate-300">
+                <label class="flex items-start gap-3 text-sm text-slate-600">
                     <input type="checkbox" wire:model="show_player_name" class="mt-0.5 h-4 w-4 rounded accent-brand-500">
                     <span>
                         Show player display name
@@ -21,25 +21,25 @@
                         </span>
                     </span>
                 </label>
-                @error('show_player_name') <p class="text-sm text-rose-400">{{ $message }}</p> @enderror
+                @error('show_player_name') <p class="text-sm text-rose-700">{{ $message }}</p> @enderror
 
-                <label class="flex items-start gap-3 text-sm text-slate-300">
+                <label class="flex items-start gap-3 text-sm text-slate-600">
                     <input type="checkbox" wire:model="show_masked_email" class="mt-0.5 h-4 w-4 rounded accent-brand-500">
                     <span>
                         Show masked email only
                         <span class="mt-0.5 block text-xs text-slate-500">
                             Protects privacy by revealing only a masked address such as
-                            <code class="rounded bg-white/5 px-1 text-slate-300">j****@example.com</code>
+                            <code class="rounded bg-slate-100 px-1 text-slate-600">j****@example.com</code>
                             instead of the full email.
                         </span>
                     </span>
                 </label>
-                @error('show_masked_email') <p class="text-sm text-rose-400">{{ $message }}</p> @enderror
+                @error('show_masked_email') <p class="text-sm text-rose-700">{{ $message }}</p> @enderror
             </div>
 
-            <div class="border-t border-white/10 pt-6 space-y-4">
+            <div class="border-t border-slate-200 pt-6 space-y-4">
                 <div>
-                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Idle & branding</h3>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-600">Idle & branding</h3>
                     <p class="mt-0.5 text-xs text-slate-500">
                         Shown on the live screen when nobody is spinning.
                     </p>
@@ -49,21 +49,21 @@
                     <label class="label">Idle message</label>
                     <input type="text" wire:model="idle_message" class="field" placeholder="Waiting for the next lucky player…">
                     <p class="mt-1 text-xs text-slate-500">Displayed on the idle screen between spins.</p>
-                    @error('idle_message') <p class="mt-1 text-sm text-rose-400">{{ $message }}</p> @enderror
+                    @error('idle_message') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="label">Screen branding</label>
                     <input type="text" wire:model="branding" class="field" placeholder="{{ config('app.name') }}">
                     <p class="mt-1 text-xs text-slate-500">Brand name or heading shown on the live display.</p>
-                    @error('branding') <p class="mt-1 text-sm text-rose-400">{{ $message }}</p> @enderror
+                    @error('branding') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="label">Auto-reset to idle (seconds)</label>
                     <input type="number" wire:model="auto_reset_seconds" min="3" max="120" class="field">
                     <p class="mt-1 text-xs text-slate-500">How long the result stays on screen before returning to the idle screen (3–120s).</p>
-                    @error('auto_reset_seconds') <p class="mt-1 text-sm text-rose-400">{{ $message }}</p> @enderror
+                    @error('auto_reset_seconds') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
                 </div>
             </div>
 

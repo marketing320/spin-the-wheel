@@ -58,6 +58,18 @@ class SpinFlowTest extends TestCase
         }
     }
 
+    public function test_blocked_player_cannot_spin(): void
+    {
+        $player = Player::factory()->create(['blocked_at' => now()]);
+
+        try {
+            $this->spins->start($player);
+            $this->fail('Blocked player should not be able to spin');
+        } catch (SpinException $e) {
+            $this->assertSame('not_eligible', $e->reason);
+        }
+    }
+
     public function test_prize_is_selected_server_side(): void
     {
         $session = $this->spins->start($this->readyPlayer());

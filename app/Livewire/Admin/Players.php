@@ -31,6 +31,16 @@ class Players extends Component
         $this->showModal = true;
     }
 
+    public function toggleBlock(int $id): void
+    {
+        $player = Player::findOrFail($id);
+        $player->forceFill(['blocked_at' => $player->blocked_at ? null : now()])->save();
+
+        session()->flash('status', $player->blocked_at
+            ? "{$player->email} has been blocked."
+            : "{$player->email} has been unblocked.");
+    }
+
     public function render()
     {
         $players = Player::withCount('spinSessions')

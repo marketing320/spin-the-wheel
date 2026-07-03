@@ -3,8 +3,8 @@
 
     <div class="card">
         <div class="mb-6 text-center">
-            <h1 class="text-2xl font-extrabold text-white">Enter to win 🎁</h1>
-            <p class="mt-2 text-sm text-slate-400">
+            <h1 class="text-2xl font-bold text-slate-900">Enter to win <i data-lucide="gift" class="inline-block h-6 w-6 align-middle text-cherry-500"></i></h1>
+            <p class="mt-2 text-sm text-slate-600">
                 Pop in your email and we'll send you a verification code to get started.
             </p>
         </div>

@@ -21,6 +21,10 @@ class SpinEligibilityService
      */
     public function check(Player $player, Campaign $campaign): array
     {
+        if ($player->isBlocked()) {
+            return $this->blocked('blocked', 'Your access has been disabled. Please contact the event staff.');
+        }
+
         if (! $player->isVerified()) {
             return $this->blocked('not_verified', 'Please verify your email before spinning.');
         }

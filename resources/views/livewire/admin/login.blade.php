@@ -1,8 +1,8 @@
 <div class="w-full max-w-sm">
     <div class="mb-6 text-center">
-        <div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-pink-500 text-2xl shadow-lg">🎡</div>
-        <h1 class="mt-4 text-2xl font-extrabold text-white">Admin sign in</h1>
-        <p class="mt-1 text-sm text-slate-400">{{ config('app.name') }} control panel</p>
+        <div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-cherry-500 shadow-lg"><i data-lucide="ferris-wheel" class="h-6 w-6 text-white"></i></div>
+        <h1 class="mt-4 text-2xl font-extrabold font-display text-slate-900">Admin sign in</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ config('app.name') }} control panel</p>
     </div>
 
     <div class="card">
@@ -10,14 +10,14 @@
             <div>
                 <label class="label" for="email">Email</label>
                 <input id="email" type="email" wire:model="email" class="field" autofocus autocomplete="username">
-                @error('email') <p class="mt-1.5 text-sm text-rose-400">{{ $message }}</p> @enderror
+                @error('email') <p class="mt-1.5 text-sm text-rose-700">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="label" for="password">Password</label>
                 <input id="password" type="password" wire:model="password" class="field" autocomplete="current-password">
-                @error('password') <p class="mt-1.5 text-sm text-rose-400">{{ $message }}</p> @enderror
+                @error('password') <p class="mt-1.5 text-sm text-rose-700">{{ $message }}</p> @enderror
             </div>
-            <label class="flex items-center gap-2 text-sm text-slate-400">
+            <label class="flex items-center gap-2 text-sm text-slate-500">
                 <input type="checkbox" wire:model="remember" class="h-4 w-4 rounded accent-brand-500">
                 Remember me
             </label>

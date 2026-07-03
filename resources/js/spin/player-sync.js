@@ -83,10 +83,19 @@ export function initPlayerPage() {
 
     function showResult(result) {
         if (!modal) return;
+        const img = modal.querySelector('#result-prize-image');
+        if (img) {
+            if (result.prize_image) {
+                img.src = result.prize_image;
+                img.classList.remove('hidden');
+            } else {
+                img.classList.add('hidden');
+            }
+        }
         modal.querySelector('#result-prize-name').textContent = result.prize_name || 'A prize!';
         const rarityEl = modal.querySelector('#result-rarity');
         if (rarityEl && result.prize_rarity) {
-            rarityEl.innerHTML = `<span class="pill bg-white/10 text-white ring-1 ring-white/20">${result.prize_rarity}</span>`;
+            rarityEl.innerHTML = `<span class="pill font-display uppercase bg-slate-100 text-slate-700 ring-2 ring-slate-300">${result.prize_rarity}</span>`;
         }
         modal.querySelector('#result-message').textContent = result.redemption_message || '';
         const link = modal.querySelector('#result-link');
@@ -142,17 +151,42 @@ export function initPlayerPage() {
         onExpired: () => { setBusy(false); setHint(''); refreshEligibility(); },
     });
 
-    // If a spin was already running when the page loaded, sync to it.
-    if (config.spinInProgress) {
-        fetch(config.routes.active, { headers: { 'Accept': 'application/json' } })
-            .then((r) => r.json())
-            .then((d) => {
-                if (d.active && d.spin) {
+    const fetchActive = () => fetch(config.routes.active, { headers: { Accept: 'application/json' } })
+        .then((r) => r.json())
+        .catch(() => null);
+
+    if (window.Echo) {
+        // Websocket mode: sync once if a spin is already in progress on load.
+        if (config.spinInProgress) {
+            fetchActive().then((d) => {
+                if (d?.active && d.spin) {
                     setBusy(true);
                     setHint(`${d.spin.player_display || 'Another player'} is spinning…`);
                     controller.run(d.spin);
                 }
-            })
-            .catch(() => {});
+            });
+        }
+    } else {
+        // Polling mode: keep the waiting/eligibility state fresh and mirror
+        // another player's spin without websockets.
+        let mirroringId = null;
+        const poll = async () => {
+            if (mySpinId) return; // I'm spinning — don't interfere.
+            const d = await fetchActive();
+            if (d?.active && d.spin) {
+                if (mirroringId !== d.spin.spin_session_id) {
+                    mirroringId = d.spin.spin_session_id;
+                    setBusy(true);
+                    setHint(`${d.spin.player_display || 'Another player'} is spinning…`);
+                    controller.run(d.spin);
+                }
+            } else {
+                if (mirroringId) { mirroringId = null; setHint(''); }
+                setBusy(false);
+                refreshEligibility();
+            }
+        };
+        poll();
+        setInterval(poll, 4000);
     }
 }

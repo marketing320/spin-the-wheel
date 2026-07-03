@@ -23,6 +23,7 @@ function initLiveView() {
     const reveal = document.getElementById('prize-reveal');
     const revealName = document.getElementById('reveal-prize-name');
     const revealRarity = document.getElementById('reveal-rarity');
+    const revealImage = document.getElementById('reveal-prize-image');
 
     let currentSpinId = null;
     let lastPayload = null;
@@ -63,6 +64,14 @@ function initLiveView() {
         if (revealName) revealName.textContent = data.prize_name || 'A prize!';
         if (revealRarity && data.prize_rarity) {
             revealRarity.textContent = data.prize_rarity;
+        }
+        if (revealImage) {
+            if (data.prize_image) {
+                revealImage.src = data.prize_image;
+                revealImage.classList.remove('hidden');
+            } else {
+                revealImage.classList.add('hidden');
+            }
         }
         show(reveal);
         fireConfetti(data.confetti_level || 'medium');

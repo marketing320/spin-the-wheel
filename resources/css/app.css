@@ -5,17 +5,39 @@
 @source '../views';
 
 @theme {
-    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji';
+    /* Body font (readable) and display font (arcade / pixel, headings + buttons). */
+    --font-sans: 'Nunito', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Press Start 2P', 'Nunito', ui-sans-serif, system-ui, sans-serif;
 
-    --color-brand-50: #eef2ff;
-    --color-brand-400: #818cf8;
-    --color-brand-500: #6366f1;
-    --color-brand-600: #4f46e5;
-    --color-brand-700: #4338ca;
+    /* Brand blue (#0e75bc) — primary interactive colour. */
+    --color-brand-50: #e7f1f9;
+    --color-brand-100: #c5ddf0;
+    --color-brand-200: #9ec7e6;
+    --color-brand-300: #6cb0dd;
+    --color-brand-400: #3f97d1;
+    --color-brand-500: #0e75bc;
+    --color-brand-600: #0b5e97;
+    --color-brand-700: #084871;
 
-    --color-gold-400: #fbbf24;
-    --color-gold-500: #f59e0b;
+    /* Brand red (#eb242a) — primary call-to-action / highlight. */
+    --color-cherry-50: #fdecec;
+    --color-cherry-100: #fbd0d1;
+    --color-cherry-200: #f7a9ab;
+    --color-cherry-300: #f0787b;
+    --color-cherry-400: #ef3f44;
+    --color-cherry-500: #eb242a;
+    --color-cherry-600: #c81d22;
+    --color-cherry-700: #a3171b;
+
+    /* Flat arcade accents (no gradients). */
+    --color-sun-500: #f6c31c;
+    --color-grass-500: #24b26b;
+    --color-grape-500: #7b5cff;
+    --color-tangerine-500: #f5822b;
+    --color-aqua-500: #12a5b0;
+    --color-bubble-500: #e84f97;
+
+    --color-ink: #0f172a;
 }
 
 @layer base {
@@ -24,73 +46,107 @@
     }
 
     body {
-        background:
-            radial-gradient(1200px 600px at 80% -10%, rgba(99, 102, 241, 0.25), transparent 60%),
-            radial-gradient(900px 500px at -10% 110%, rgba(236, 72, 153, 0.18), transparent 55%),
-            #0b1020;
-        color: #e5e7eb;
+        background: #ffffff;
+        color: #334155; /* slate-700 */
         min-height: 100vh;
         overflow-x: hidden;
+        font-family: var(--font-sans);
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-display);
+        color: #0f172a; /* slate-900 */
+        letter-spacing: 0.01em;
     }
 }
 
 @layer components {
+    /* Signature pixel/arcade panel: white with a bold ink border + hard shadow. */
+    .card {
+        background: #ffffff;
+        @apply rounded-2xl border-[3px] border-slate-900 p-6 sm:p-8;
+        box-shadow: 5px 5px 0 0 var(--color-ink);
+    }
+
+    /* Lighter secondary panel (tables, sub-panels). */
     .glass {
-        background: rgba(17, 24, 39, 0.55);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
+        background: #ffffff;
+        @apply rounded-2xl border-2 border-slate-200 shadow-sm;
     }
 
     .btn-primary {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white
-            shadow-lg shadow-brand-600/30 transition hover:bg-brand-500 focus:outline-none focus:ring-2
-            focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-900
+        font-family: var(--font-display);
+        @apply inline-flex items-center justify-center gap-2 rounded-xl border-[3px] border-slate-900 bg-cherry-500
+            px-5 py-3 text-white transition hover:bg-cherry-600 focus:outline-none focus:ring-2 focus:ring-cherry-300
             disabled:cursor-not-allowed disabled:opacity-50;
+        box-shadow: 4px 4px 0 0 var(--color-ink);
+    }
+
+    .btn-primary:active:not(:disabled) {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 0 var(--color-ink);
     }
 
     .btn-ghost {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3
-            font-semibold text-slate-200 transition hover:bg-white/5 disabled:opacity-50;
+        font-family: var(--font-display);
+        @apply inline-flex items-center justify-center gap-2 rounded-xl border-[3px] border-slate-900 bg-white
+            px-5 py-3 text-slate-900 transition hover:bg-slate-100 disabled:opacity-50;
+        box-shadow: 4px 4px 0 0 var(--color-ink);
+    }
+
+    .btn-ghost:active:not(:disabled) {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 0 var(--color-ink);
     }
 
     .field {
-        @apply w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-slate-100
-            placeholder-slate-500 shadow-inner transition focus:border-brand-400 focus:outline-none
-            focus:ring-2 focus:ring-brand-500/40;
+        @apply w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-slate-900
+            placeholder-slate-400 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200;
     }
 
     .label {
-        @apply mb-1.5 block text-sm font-medium text-slate-300;
-    }
-
-    .card {
-        background: rgba(17, 24, 39, 0.55);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        @apply rounded-3xl p-6 shadow-2xl sm:p-8;
+        @apply mb-1.5 block text-sm font-semibold text-slate-700;
     }
 
     .pill {
-        @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+        @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold;
+    }
+}
+
+@layer utilities {
+    .font-display {
+        font-family: var(--font-display);
+    }
+
+    .pixel-shadow {
+        box-shadow: 4px 4px 0 0 var(--color-ink);
+    }
+
+    .pixel-shadow-lg {
+        box-shadow: 6px 6px 0 0 var(--color-ink);
+    }
+
+    .pixelated {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
     }
 }
 
 @keyframes float-slow {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
 }
 
 .animate-float-slow {
-    animation: float-slow 6s ease-in-out infinite;
+    animation: float-slow 3s steps(6, end) infinite;
 }
 
-@keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.35); }
-    50% { box-shadow: 0 0 60px rgba(99, 102, 241, 0.65); }
+/* Arcade "pop" bounce — no glow, no gradient. */
+@keyframes arcade-pop {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
 }
 
 .animate-pulse-glow {
-    animation: pulse-glow 2.5s ease-in-out infinite;
+    animation: arcade-pop 1.4s steps(8, end) infinite;
 }

@@ -3,15 +3,15 @@
 
     <div class="card">
         <div class="mb-6 text-center">
-            <h1 class="text-2xl font-extrabold text-white">Almost there! ✍️</h1>
-            <p class="mt-2 text-sm text-slate-400">Complete your details to unlock the wheel.</p>
+            <h1 class="text-2xl font-bold text-slate-900">Almost there! <i data-lucide="pencil" class="inline-block h-6 w-6 align-middle text-grape-500"></i></h1>
+            <p class="mt-2 text-sm text-slate-600">Complete your details to unlock the wheel.</p>
         </div>
 
         @if ($fields->isEmpty())
-            <div class="rounded-xl border border-white/10 bg-white/5 p-4 text-center text-sm text-slate-300">
+            <div class="rounded-xl border-2 border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
                 No additional details are required. You're ready to spin!
             </div>
-            <a href="{{ route('spin') }}" wire:navigate class="btn-primary mt-6 w-full">Continue to the wheel →</a>
+            <a href="{{ route('spin') }}" wire:navigate class="btn-primary mt-6 w-full">Continue to the wheel <i data-lucide="arrow-right" class="inline-block h-4 w-4 align-middle"></i></a>
         @else
             <form wire:submit="submit" class="space-y-5">
                 @foreach ($fields as $field)
@@ -43,7 +43,7 @@
                             @case('radio')
                                 <div class="space-y-2">
                                     @foreach ($options as $opt)
-                                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 text-sm hover:border-brand-400/50">
+                                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm hover:border-brand-400">
                                             <input type="radio" wire:model="responses.{{ $key }}" value="{{ $opt['value'] }}" class="h-4 w-4 accent-brand-500">
                                             <span>{{ $opt['label'] }}</span>
                                         </label>
@@ -54,7 +54,7 @@
                             @case('checkbox')
                                 <div class="space-y-2">
                                     @foreach ($options as $opt)
-                                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 text-sm hover:border-brand-400/50">
+                                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm hover:border-brand-400">
                                             <input type="checkbox" wire:model="responses.{{ $key }}" value="{{ $opt['value'] }}" class="h-4 w-4 rounded accent-brand-500">
                                             <span>{{ $opt['label'] }}</span>
                                         </label>
@@ -63,7 +63,7 @@
                                 @break
 
                             @case('consent')
-                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 text-sm">
+                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                                     <input type="checkbox" wire:model="responses.{{ $key }}" class="mt-0.5 h-4 w-4 rounded accent-brand-500">
                                     <span>{{ $field->label }} @if ($field->is_required)<span class="text-rose-400">*</span>@endif</span>
                                 </label>
@@ -99,7 +99,7 @@
                 @endforeach
 
                 <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled">
-                    <span wire:loading.remove wire:target="submit">Save & continue to the wheel →</span>
+                    <span wire:loading.remove wire:target="submit">Save & continue to the wheel <i data-lucide="arrow-right" class="inline-block h-4 w-4 align-middle"></i></span>
                     <span wire:loading wire:target="submit">Saving…</span>
                 </button>
             </form>

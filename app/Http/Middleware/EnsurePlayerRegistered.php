@@ -24,6 +24,23 @@ class EnsurePlayerRegistered
             return redirect()->route('player.register');
         }
 
+        // A blocked player is signed out immediately.
+        if ($player->isBlocked()) {
+            Auth::guard('player')->logout();
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Your access has been disabled.'], 403);
+            }
+
+            return redirect()->route('player.register')
+                ->with('status', 'Your access has been disabled. Please contact the event staff.');
+        }
+
+        // Track presence, at most once per minute to avoid write churn.
+        if (! $player->last_seen_at || $player->last_seen_at->lt(now()->subMinute())) {
+            $player->forceFill(['last_seen_at' => now()])->saveQuietly();
+        }
+
         return $next($request);
     }
 }

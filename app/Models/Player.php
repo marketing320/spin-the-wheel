@@ -25,6 +25,8 @@ class Player extends Authenticatable implements AuthenticatableContract
         'otp_verified',
         'form_completed_at',
         'last_spin_at',
+        'last_seen_at',
+        'blocked_at',
     ];
 
     protected $casts = [
@@ -32,6 +34,8 @@ class Player extends Authenticatable implements AuthenticatableContract
         'otp_verified' => 'boolean',
         'form_completed_at' => 'datetime',
         'last_spin_at' => 'datetime',
+        'last_seen_at' => 'datetime',
+        'blocked_at' => 'datetime',
     ];
 
     public function formResponses(): HasMany
@@ -57,6 +61,19 @@ class Player extends Authenticatable implements AuthenticatableContract
     public function hasCompletedForm(): bool
     {
         return $this->form_completed_at !== null;
+    }
+
+    public function isBlocked(): bool
+    {
+        return $this->blocked_at !== null;
+    }
+
+    /**
+     * Considered "online" if seen within the last 5 minutes.
+     */
+    public function isOnline(): bool
+    {
+        return $this->last_seen_at !== null && $this->last_seen_at->gt(now()->subMinutes(5));
     }
 
     /**

@@ -3,10 +3,10 @@
 
     <div class="card">
         <div class="mb-6 text-center">
-            <h1 class="text-2xl font-extrabold text-white">Check your inbox 📬</h1>
-            <p class="mt-2 text-sm text-slate-400">
+            <h1 class="text-2xl font-bold text-slate-900">Check your inbox <i data-lucide="mail-open" class="inline-block h-6 w-6 align-middle text-brand-500"></i></h1>
+            <p class="mt-2 text-sm text-slate-600">
                 We sent a verification code to<br>
-                <span class="font-semibold text-slate-200">{{ $email }}</span>
+                <span class="font-bold text-slate-900">{{ $email }}</span>
             </p>
         </div>
 
@@ -36,12 +36,12 @@
         </form>
 
         @if ($status)
-            <p class="mt-4 text-center text-sm text-brand-300">{{ $status }}</p>
+            <p class="mt-4 text-center text-sm font-semibold text-brand-600">{{ $status }}</p>
         @endif
 
         <div class="mt-6 flex items-center justify-between text-xs text-slate-500">
-            <a href="{{ route('player.register') }}" wire:navigate class="hover:text-slate-300">← Change email</a>
-            <button type="button" wire:click="resend" wire:loading.attr="disabled" class="font-semibold text-brand-300 hover:text-brand-200">
+            <a href="{{ route('player.register') }}" wire:navigate class="inline-flex items-center gap-1 hover:text-slate-700"><i data-lucide="arrow-left" class="h-4 w-4"></i> Change email</a>
+            <button type="button" wire:click="resend" wire:loading.attr="disabled" class="font-bold text-brand-600 hover:text-brand-700">
                 Resend code
             </button>
         </div>
