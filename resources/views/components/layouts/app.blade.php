@@ -14,8 +14,8 @@
 <body class="antialiased">
     <div class="relative flex min-h-screen flex-col">
         <header class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-5 sm:py-5">
-            <a href="{{ route('home') }}" class="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-slate-900">
-                <span class="grid h-9 w-9 place-items-center rounded-lg border-2 border-slate-900 bg-cherry-500 pixel-shadow"><i data-lucide="ferris-wheel" class="h-5 w-5 text-white"></i></span>
+            <a href="{{ route('home') }}" class="group flex origin-left items-center gap-2 font-display text-lg font-bold tracking-tight text-slate-900 transition-transform duration-150 ease-[cubic-bezier(.34,1.56,.64,1)] active:translate-x-0.5 active:translate-y-0.5 active:scale-[0.98]">
+                <span class="grid h-9 w-9 place-items-center rounded-lg border-2 border-slate-900 bg-cherry-500 pixel-shadow transition-all duration-150 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:translate-x-0.5 group-active:translate-y-0.5 group-active:scale-95 group-active:shadow-[2px_2px_0_0_#0f172a]"><i data-lucide="ferris-wheel" class="h-5 w-5 text-white transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:rotate-[-20deg] group-active:scale-90"></i></span>
             </a>
             <nav class="flex items-center gap-2 text-sm">
                 {{--<a href="{{ route('live-view') }}" target="_blank" class="btn-ghost !px-3 !py-2 text-xs">

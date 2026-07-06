@@ -13,24 +13,30 @@ COPY . .
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-# Stage 2 — application runtime: FrankenPHP (embedded Caddy w/ auto-HTTPS).
-# The same image runs the web server and the queue worker.
+# Stage 2 — application runtime: nginx + php-fpm, supervised in one image.
+# The same image runs the web server (nginx + php-fpm) and the queue worker
+# (php-fpm/nginx simply aren't started for the queue role — see entrypoint).
 #
 # PHP 8.4 is required: composer.lock pins Symfony 8.1 (needs php >= 8.4.1).
 # ---------------------------------------------------------------------------
-FROM dunglas/frankenphp:php8.4 AS app
+FROM php:8.4-fpm-alpine AS app
 
-# PHP extensions Laravel + this app need.
-RUN install-php-extensions \
-    pdo_mysql \
-    mbstring \
-    bcmath \
-    gd \
-    zip \
-    exif \
-    pcntl \
-    intl \
-    opcache
+# PHP extensions Laravel + this app need, via mlocati's installer.
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions \
+    && install-php-extensions \
+        pdo_mysql \
+        mbstring \
+        bcmath \
+        gd \
+        zip \
+        exif \
+        pcntl \
+        intl \
+        opcache
+
+# nginx (web server) + supervisor (runs nginx and php-fpm as one process tree).
+RUN apk add --no-cache nginx supervisor
 
 # Composer binary.
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -56,16 +62,16 @@ RUN composer dump-autoload --optimize --no-dev --no-scripts \
         bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Container config.
-COPY docker/Caddyfile /etc/frankenphp/Caddyfile
+# Container config. The nginx server block replaces Alpine's default site so
+# it is picked up regardless of the stock nginx.conf's include glob.
+COPY docker/nginx/app.conf /etc/nginx/http.d/default.conf
+COPY docker/supervisor/supervisord.conf /etc/supervisord.conf
 COPY docker/php/app.ini /usr/local/etc/php/conf.d/zz-app.ini
 COPY docker/app/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# HTTP only by default; docker-compose sets SERVER_NAME to your domain to
-# switch FrankenPHP/Caddy into automatic HTTPS mode.
-ENV SERVER_NAME=":80"
 ENV CONTAINER_ROLE="web"
+EXPOSE 8005
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--adapter", "caddyfile"]
+CMD ["supervisord", "-c", "/etc/supervisord.conf", "-n"]

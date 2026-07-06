@@ -115,10 +115,15 @@ host/port.) Keep `php artisan reverb:start` and `php artisan queue:work` running
 
 ## 🐳 Deploy to a VPS with Docker
 
-The project ships a production Docker setup: **FrankenPHP** (embedded Caddy with automatic
-Let's Encrypt HTTPS) serving the app, a **queue worker**, and **MySQL 8** — all in one
-`docker-compose.yaml`. Cache/session/queue use the database, so no Redis is needed. Realtime runs
-in polling mode (`BROADCAST_CONNECTION=log`), so no Reverb container is required.
+The project ships a production Docker setup: **nginx + php-fpm** serving the app on plain HTTP
+port **8005**, a **queue worker**, and **MySQL 8** — all in one `docker-compose.yaml`.
+Cache/session/queue use the database, so no Redis is needed. Realtime runs in polling mode
+(`BROADCAST_CONNECTION=log`), so no Reverb container is required.
+
+TLS and the public domain are **not** handled by this stack — it's designed to sit behind a
+**Cloudflare Tunnel** (or a host-level nginx reverse proxy) that forwards to
+`http://localhost:8005`. With a Cloudflare Tunnel you don't need to open any inbound firewall
+port at all, since the tunnel connects outbound from the VPS to Cloudflare.
 
 **Prerequisites on the VPS (Ubuntu):** Docker Engine + the Compose plugin.
 
@@ -135,7 +140,7 @@ git clone <your-repo> spin-the-wheel && cd spin-the-wheel
 
 # 2. Create the production env file and edit it
 cp .env.production.example .env
-#    → set SERVER_NAME (your domain), DB_PASSWORD, DB_ROOT_PASSWORD, mail creds…
+#    → set APP_URL (your public https domain), DB_PASSWORD, DB_ROOT_PASSWORD, mail creds…
 
 # 3. Generate the app key (writes nothing yet — paste the value into .env's APP_KEY)
 docker compose run --rm app php artisan key:generate --show
@@ -145,22 +150,21 @@ docker compose run --rm app php artisan key:generate --show
 docker compose up -d --build
 ```
 
-That's it. On boot the `app` container waits for MySQL, runs `migrate --force`, links storage,
-caches config/views, and starts FrankenPHP. Point your domain's DNS **A record** at the VPS and
-Caddy auto-provisions TLS for `SERVER_NAME` on ports 80/443 (HTTP-01 challenge — the domain must
-resolve to the box and 80/443 must be open; if you front it with Cloudflare, use *DNS-only* or an
-Origin/Full-strict cert).
+On boot the `app` container waits for MySQL, runs `migrate --force`, links storage, caches
+config/views, and starts nginx + php-fpm on **:8005**. Then point your Cloudflare Tunnel's public
+hostname (or reverse proxy) at `http://localhost:8005` — that's what actually terminates TLS and
+serves the public domain.
 
 **What runs**
 
 | Service | Role |
 |---|---|
-| `app` | FrankenPHP web server (80/443, auto-HTTPS) + migrations on start |
+| `app` | nginx + php-fpm on `:8005` (plain HTTP) + migrations on start |
 | `queue` | `php artisan queue:work` — broadcasts + failsafe spin completion |
 | `db` | MySQL 8 (named volume `db-data`) |
 
-**Persistent data** lives in named volumes: `db-data` (database), `storage-app` (uploaded prize /
-celebration images), and `caddy-data` (TLS certificates).
+**Persistent data** lives in named volumes: `db-data` (database) and `storage-app` (uploaded
+prize / celebration images).
 
 **Common operations**
 
@@ -171,6 +175,10 @@ docker compose exec app php artisan tinker
 docker compose down                 # stop (volumes/data preserved)
 git pull && docker compose up -d --build   # deploy an update (re-migrates automatically)
 ```
+
+If port 8005 is already used by another project on the box, change the left-hand side of the
+`ports:` mapping for the `app` service in `docker-compose.yaml` (e.g. `"8006:8005"`) — no other
+file needs to change.
 
 > To switch on true websockets later: run a Reverb container/command, set
 > `BROADCAST_CONNECTION=reverb` + `VITE_REVERB_ENABLED=true` (rebuild), and route `/app` to it.

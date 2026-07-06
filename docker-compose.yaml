@@ -1,10 +1,13 @@
 # Spin The Wheel — production stack for a single VPS.
 #
-#   1. cp .env.production.example .env   (then fill in secrets + APP_KEY + SERVER_NAME)
+#   1. cp .env.production.example .env   (then fill in secrets + APP_KEY)
 #   2. docker compose up -d --build
 #
-# The `app` service is FrankenPHP (embedded Caddy) and provisions Let's Encrypt
-# TLS automatically once SERVER_NAME is a real domain pointed at this host.
+# The `app` service is nginx + php-fpm, serving plain HTTP on port 8005. TLS
+# and the public domain are handled OUTSIDE this stack — e.g. a Cloudflare
+# Tunnel (or a host-level nginx reverse proxy) forwarding to
+# http://localhost:8005. No inbound firewall ports need to be opened for a
+# Cloudflare Tunnel setup, since the tunnel connects outbound.
 
 services:
   app:
@@ -20,13 +23,9 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"   # HTTP/3
+      - "8005:8005"
     volumes:
       - storage-app:/app/storage/app   # persisted uploads (prize / celebration images)
-      - caddy-data:/data               # TLS certificates
-      - caddy-config:/config
     healthcheck:
       test: ["CMD", "php", "artisan", "inspire"]
       interval: 30s
@@ -69,5 +68,3 @@ services:
 volumes:
   db-data:
   storage-app:
-  caddy-data:
-  caddy-config:
