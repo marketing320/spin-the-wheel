@@ -73,6 +73,75 @@ class PrizeSelectionServiceTest extends TestCase
         $this->assertSame(2, $prize->fresh()->inventory_quantity);
     }
 
+    public function test_depleting_the_last_unit_zeroes_odds_in_the_database(): void
+    {
+        $campaign = Campaign::factory()->create();
+        $prize = Prize::factory()->for($campaign)->create([
+            'inventory_enabled' => true,
+            'inventory_quantity' => 1,
+            'win_percentage' => 40,
+            'weight' => 40,
+        ]);
+
+        $this->service->selectAndReserve($campaign);
+
+        $fresh = $prize->fresh();
+        $this->assertSame(0, $fresh->inventory_quantity);
+        $this->assertSame('0.0000', (string) $fresh->win_percentage);
+        $this->assertSame(0, $fresh->weight);
+    }
+
+    public function test_reserving_stock_above_zero_leaves_odds_untouched(): void
+    {
+        $campaign = Campaign::factory()->create();
+        $prize = Prize::factory()->for($campaign)->create([
+            'inventory_enabled' => true,
+            'inventory_quantity' => 3,
+            'win_percentage' => 40,
+            'weight' => 40,
+        ]);
+
+        $this->service->selectAndReserve($campaign);
+
+        $fresh = $prize->fresh();
+        $this->assertSame(2, $fresh->inventory_quantity);
+        $this->assertSame('40.0000', (string) $fresh->win_percentage);
+        $this->assertSame(40, $fresh->weight);
+    }
+
+    public function test_untracked_inventory_is_never_zeroed_even_at_zero_quantity(): void
+    {
+        // inventory_enabled = false: a stale 0 in the quantity column must not
+        // be treated as "out of stock".
+        $prize = Prize::factory()->create([
+            'inventory_enabled' => false,
+            'inventory_quantity' => 0,
+            'win_percentage' => 40,
+            'weight' => 40,
+        ]);
+
+        $this->assertSame('40.0000', (string) $prize->win_percentage);
+        $this->assertSame(40, $prize->weight);
+        $this->assertFalse($prize->isOutOfStock());
+        $this->assertTrue($prize->isWinnable());
+    }
+
+    public function test_saving_an_out_of_stock_prize_via_the_model_zeroes_odds(): void
+    {
+        $prize = Prize::factory()->create([
+            'inventory_enabled' => true,
+            'inventory_quantity' => 5,
+            'win_percentage' => 40,
+            'weight' => 40,
+        ]);
+
+        $prize->update(['inventory_quantity' => 0]);
+
+        $fresh = $prize->fresh();
+        $this->assertSame('0.0000', (string) $fresh->win_percentage);
+        $this->assertSame(0, $fresh->weight);
+    }
+
     public function test_strict_mode_respects_percentages(): void
     {
         $campaign = Campaign::factory()->strict()->create();

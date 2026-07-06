@@ -37,9 +37,17 @@ class PrizeSelectionService
 
         $prize = $this->pick($campaign, $prizes);
 
-        // Reserve one unit of stock atomically when inventory is tracked.
+        // Reserve one unit of stock atomically when inventory is tracked. If
+        // this exhausts the last unit, zero the odds columns in the SAME
+        // query — Prize's `saving` hook (see Prize::booted()) can't catch
+        // this, because decrement() issues a raw single-column SQL update
+        // and never calls save().
         if ($prize->inventory_enabled && $prize->inventory_quantity !== null) {
-            $prize->decrement('inventory_quantity');
+            $extra = ($prize->inventory_quantity - 1) <= 0
+                ? ['win_percentage' => 0, 'weight' => 0]
+                : [];
+
+            $prize->decrement('inventory_quantity', 1, $extra);
             $prize->refresh();
         }
 

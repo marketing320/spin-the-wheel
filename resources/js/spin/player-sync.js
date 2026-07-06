@@ -35,6 +35,9 @@ export function initPlayerPage() {
     const hint = document.getElementById('spin-hint');
     const banner = document.getElementById('status-banner');
     const modal = document.getElementById('result-modal');
+    const queueModal = document.getElementById('queue-modal');
+    const queueModalPosition = document.getElementById('queue-modal-position');
+    const turnModal = document.getElementById('turn-modal');
     const csrf = config.csrf || document.querySelector('meta[name=csrf-token]')?.content;
 
     // Live prize display above the pointer — shows whatever is under the pointer.
@@ -76,6 +79,45 @@ export function initPlayerPage() {
         return 'You are first in the queue. Please wait for your turn…';
     }
 
+    const showModal = (node) => { node?.classList.remove('hidden'); node?.classList.add('flex'); };
+    const hideModal = (node) => { node?.classList.add('hidden'); node?.classList.remove('flex'); };
+
+    // Whether the player has already tapped "Let's go!" on the turn modal for
+    // their current turn — prevents it popping back open on every poll tick
+    // while they still haven't spun. Reset once they leave the queue so it
+    // can show again next time they queue up.
+    let turnAcknowledged = false;
+
+    function updateQueueModals() {
+        const queue = eligibility.queue || {};
+        const queued = Boolean(queue.queued);
+        const canStart = Boolean(eligibility.can_start);
+
+        if (queued && canStart) {
+            hideModal(queueModal);
+            if (!turnAcknowledged) showModal(turnModal);
+            return;
+        }
+
+        if (queued) {
+            hideModal(turnModal);
+            const ahead = Number(queue.ahead || 0);
+            if (queueModalPosition) {
+                queueModalPosition.textContent = ahead === 0
+                    ? "You're next in line!"
+                    : ahead === 1
+                        ? '1 person ahead of you'
+                        : `${ahead} people ahead of you`;
+            }
+            showModal(queueModal);
+            return;
+        }
+
+        hideModal(queueModal);
+        hideModal(turnModal);
+        turnAcknowledged = false;
+    }
+
     function renderState() {
         if (!button) return;
 
@@ -106,6 +148,8 @@ export function initPlayerPage() {
                 setHint('');
             }
         }
+
+        updateQueueModals();
     }
 
     async function post(url, body) {
@@ -276,6 +320,11 @@ export function initPlayerPage() {
     }
 
     button?.addEventListener('click', onSpinClick);
+
+    document.getElementById('turn-modal-dismiss')?.addEventListener('click', () => {
+        turnAcknowledged = true;
+        hideModal(turnModal);
+    });
 
     subscribeToSpins({
         onStarted: (payload) => {

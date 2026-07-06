@@ -4,6 +4,13 @@ import { SpinController } from './spin-controller';
 import { fireConfetti } from './confetti-controller';
 import { subscribeToSpins } from './live-sync';
 
+// ---------------------------------------------------------------------------
+// Idle spin pace — degrees per second the wheel slowly rotates while nobody
+// is playing. Tune this single number to speed up/slow down the idle motion;
+// no other changes needed. Rebuild with `npm run build` after editing.
+// ---------------------------------------------------------------------------
+const IDLE_SPIN_SPEED_DEG_PER_SEC = 24;
+
 function initLiveView() {
     const configElement = document.getElementById('live-config');
     if (!configElement) return;
@@ -13,7 +20,6 @@ function initLiveView() {
     const pointer = document.getElementById('live-wheel-pointer');
     let wheel = createWheel(stage, config.segments || []);
     const controller = new SpinController(wheel, { pointer, soundUrl: config.soundUrl });
-    const idle = document.getElementById('idle-screen');
     const playerName = document.getElementById('current-player');
     const reveal = document.getElementById('prize-reveal');
     const revealName = document.getElementById('reveal-prize-name');
@@ -23,6 +29,7 @@ function initLiveView() {
     const queueList = document.getElementById('queue-list');
     const soundOverlay = document.getElementById('enable-sound-overlay');
     const soundButton = document.getElementById('enable-sound-button');
+    const ctaBanner = document.getElementById('cta-banner');
 
     // Live prize display above the pointer — shows whatever is under it.
     const prizeChip = document.getElementById('pointer-prize-chip');
@@ -41,6 +48,64 @@ function initLiveView() {
             prizeImage.classList.toggle('hidden', !hasImage);
             prizeIcon.classList.toggle('hidden', hasImage);
             if (hasImage) prizeImage.src = seg.image;
+        }
+    }
+
+    // Idle animation: a slow continuous rotation while nobody is spinning,
+    // so the wheel is never just sitting still. Runs on its own rAF loop,
+    // completely separate from SpinController's physics-driven one — the two
+    // never run at the same time (handleStart() always stops this first).
+    let idleAngle = 0;
+    let idleRafId = null;
+    let idleLastTimestamp = null;
+
+    function idleSpinTick(timestamp) {
+        if (idleLastTimestamp === null) idleLastTimestamp = timestamp;
+        const deltaSeconds = (timestamp - idleLastTimestamp) / 1000;
+        idleLastTimestamp = timestamp;
+
+        idleAngle = (idleAngle + IDLE_SPIN_SPEED_DEG_PER_SEC * deltaSeconds) % 360;
+        wheel?.setRotationDegrees(idleAngle);
+        showSegment(SpinController.segmentAt(idleAngle, currentSegments.length || 1));
+
+        idleRafId = requestAnimationFrame(idleSpinTick);
+    }
+
+    // Constant CTA banner: a single fixed message + color, rendered
+    // server-side in the blade view (only present at all when enabled with
+    // a message set). Tied to the same idle/active lifecycle as the idle
+    // spin above — always shown/hidden together, so it's never visible
+    // during an active spin or the prize-reveal overlay — and pops in with
+    // a bounce every time it appears.
+    function playPop(node, className) {
+        if (!node) return;
+        node.classList.remove(className);
+        void node.offsetWidth; // force reflow so the animation restarts even if it's already applied
+        node.classList.add(className);
+    }
+
+    function showCtaBanner() {
+        if (!ctaBanner) return;
+        show(ctaBanner);
+        playPop(ctaBanner, 'animate-cta-pop-in');
+    }
+
+    function hideCtaBanner() {
+        hide(ctaBanner);
+    }
+
+    function startIdleSpin() {
+        showCtaBanner();
+        if (idleRafId !== null) return;
+        idleLastTimestamp = null;
+        idleRafId = requestAnimationFrame(idleSpinTick);
+    }
+
+    function stopIdleSpin() {
+        hideCtaBanner();
+        if (idleRafId !== null) {
+            cancelAnimationFrame(idleRafId);
+            idleRafId = null;
         }
     }
 
@@ -84,10 +149,10 @@ function initLiveView() {
         revealedSpinId = null;
         lastPayload = null;
         hide(reveal);
-        show(idle);
         if (playerName) playerName.textContent = '';
         currentSegments = config.segments || [];
         showSegment(0);
+        startIdleSpin();
     }
 
     function handleComplete(payload) {
@@ -101,7 +166,7 @@ function initLiveView() {
             revealImage.classList.toggle('hidden', !data.prize_image);
             if (data.prize_image) revealImage.src = data.prize_image;
         }
-        hide(idle);
+        stopIdleSpin();
         show(reveal);
         fireConfetti(data.confetti_level || 'medium', {
             image: data.confetti_image,
@@ -115,6 +180,7 @@ function initLiveView() {
 
     function handleStart(payload) {
         if (!payload || payload.spin_session_id === currentSpinId) return;
+        stopIdleSpin();
         clearTimeout(resetTimer);
         resetTimer = null;
         currentSpinId = payload.spin_session_id;
@@ -128,7 +194,6 @@ function initLiveView() {
             currentSegments = payload.wheel_segments;
         }
 
-        hide(idle);
         hide(reveal);
         if (playerName) playerName.textContent = payload.player_display || '';
 
@@ -180,6 +245,7 @@ function initLiveView() {
 
     renderQueue(config.queue);
     showSegment(0); // resting prize under the pointer
+    startIdleSpin();
     sync();
     setInterval(sync, 3000);
 }

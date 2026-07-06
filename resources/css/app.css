@@ -173,6 +173,18 @@
     animation: arcade-pop 1.4s steps(8, end) infinite;
 }
 
+/* CTA banner entrance — played once when the banner first appears and again
+   every time its message/color swaps, so it always "throws in" on load. */
+@keyframes cta-pop-in {
+    0% { transform: scale(0.8) translateY(10px); opacity: 0; }
+    60% { transform: scale(1.06) translateY(-3px); opacity: 1; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.animate-cta-pop-in {
+    animation: cta-pop-in 380ms cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
 /* Explicit press behavior for animated CTAs and stateful spin controls. */
 .pressable-control {
     transform-origin: center;

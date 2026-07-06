@@ -67,6 +67,47 @@
                 </div>
             </div>
 
+            <div class="border-t border-slate-200 pt-6 space-y-4">
+                <div>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-600">Call-to-action banner</h3>
+                    <p class="mt-0.5 text-xs text-slate-500">
+                        A single, always-the-same message shown in a bold banner below the branding bar while the wheel is idle. It hides automatically once a spin starts and reappears when the screen returns to idle.
+                    </p>
+                </div>
+
+                <label class="flex items-start gap-3 text-sm text-slate-600">
+                    <input type="checkbox" wire:model="cta_enabled" class="mt-0.5 h-4 w-4 rounded accent-brand-500">
+                    <span>
+                        Show CTA banner
+                        <span class="mt-0.5 block text-xs text-slate-500">
+                            Turn the banner on or off without clearing your saved message.
+                        </span>
+                    </span>
+                </label>
+                @error('cta_enabled') <p class="text-sm text-rose-700">{{ $message }}</p> @enderror
+
+                <div>
+                    <label class="label">Message</label>
+                    <input type="text" wire:model="cta_message" class="field" placeholder="Scan the QR code to join and play!">
+                    <p class="mt-1 text-xs text-slate-500">Shown big and bold on the live screen — keep it short and punchy.</p>
+                    @error('cta_message') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label class="label">Accent color</label>
+                    <select wire:model="cta_color" class="field">
+                        <option value="sun">Sun (yellow)</option>
+                        <option value="grass">Grass (green)</option>
+                        <option value="grape">Grape (purple)</option>
+                        <option value="tangerine">Tangerine (orange)</option>
+                        <option value="aqua">Aqua (teal)</option>
+                        <option value="bubble">Bubble (pink)</option>
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500">Colors the banner's icon and accent bar. The message itself always stays on a white background for readability.</p>
+                    @error('cta_color') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
             <div class="flex justify-end pt-2">
                 <button type="submit" class="btn-primary !py-2 text-sm">Save live view settings</button>
             </div>

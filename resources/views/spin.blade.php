@@ -96,4 +96,30 @@
             <a id="result-link" href="#" class="btn-primary mt-6 w-full">View prize →</a>
         </div>
     </div>
+
+    {{-- Queue modal — shown while queued and it isn't the player's turn yet,
+         so the disabled Spin button + small hint text below it aren't the
+         only signal that something happened. Stays open (no close button)
+         until it becomes their turn. --}}
+    <div id="queue-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-5 backdrop-blur">
+        <div class="card w-full max-w-sm text-center">
+            <i data-lucide="loader-2" class="mx-auto h-10 w-10 animate-spin text-brand-500"></i>
+            <div class="mt-4 font-display text-lg font-bold text-slate-900">You're in the queue!</div>
+            <p class="mt-2 text-sm text-slate-600">Only one player can spin the wheel at a time, so we've saved your place in line.</p>
+            <div id="queue-modal-position" class="mt-4 rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3 font-display text-sm font-bold text-brand-700">—</div>
+            <p class="mt-3 text-xs text-slate-500">This page updates automatically — no need to refresh.</p>
+        </div>
+    </div>
+
+    {{-- Turn modal — announces it's the player's turn, since they may have
+         looked away while queued. Requires a tap to dismiss before the Spin
+         button underneath becomes reachable. --}}
+    <div id="turn-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-5 backdrop-blur">
+        <div class="card w-full max-w-sm text-center">
+            <i data-lucide="sparkles" class="mx-auto h-10 w-10 text-cherry-500"></i>
+            <div class="mt-4 font-display text-lg font-bold text-slate-900">It's your turn!</div>
+            <p class="mt-2 text-sm text-slate-600">Tap below, then hit SPIN to try your luck.</p>
+            <button id="turn-modal-dismiss" type="button" class="btn-primary mt-5 w-full">Let's go!</button>
+        </div>
+    </div>
 </x-layouts.app>

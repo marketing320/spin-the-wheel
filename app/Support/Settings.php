@@ -36,6 +36,11 @@ class Settings
             'live_view.branding' => config('app.name'),
             'live_view.auto_reset_seconds' => 12,
 
+            // Constant CTA banner shown below the branding bar while idle.
+            'live_view.cta_enabled' => false,
+            'live_view.cta_message' => '',
+            'live_view.cta_color' => 'sun',
+
             'branding.app_name' => config('app.name'),
             'branding.tagline' => 'Spin to win amazing prizes!',
             'branding.terms' => '',

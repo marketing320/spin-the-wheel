@@ -36,6 +36,9 @@ class LiveViewController extends Controller
                 'idle_message' => Settings::get('live_view.idle_message'),
                 'branding' => Settings::get('live_view.branding'),
                 'auto_reset_seconds' => (int) Settings::get('live_view.auto_reset_seconds', 12),
+                'cta_enabled' => (bool) Settings::get('live_view.cta_enabled'),
+                'cta_message' => (string) Settings::get('live_view.cta_message', ''),
+                'cta_color' => (string) Settings::get('live_view.cta_color', 'sun'),
             ],
             'queue' => $this->queue->snapshot($campaign),
         ]);

@@ -27,7 +27,7 @@
                     </a>
                     <form method="POST" action="{{ route('player.logout') }}">
                         @csrf
-                        <button type="submit" class="btn-ghost !px-3 !py-2 text-xs">Sign out</button>
+                        <button type="submit" class="btn-ghost !px-3 !py-2 text-xs"><i data-lucide="log-out" class="h-4 w-4"></i>Logout</button>
                     </form>
                 @endauth
             </nav>

@@ -49,11 +49,12 @@ class SpinController extends Controller
 
         abort_if($spin->player_id !== $player->id, 403);
 
-        $spin->load(['prize', 'campaign']);
+        $spin->load(['prize', 'campaign', 'result.voucher']);
 
         return view('result', [
             'spin' => $spin,
             'prize' => $spin->prize,
+            'voucher' => $spin->result?->voucher,
         ]);
     }
 }

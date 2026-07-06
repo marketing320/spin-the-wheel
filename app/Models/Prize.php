@@ -47,9 +47,37 @@ class Prize extends Model
         'sort_order' => 'integer',
     ];
 
+    /**
+     * Whenever a prize is saved with its tracked inventory at (or below) zero,
+     * its odds columns are forced to zero too — a sold-out prize should never
+     * show non-zero odds on the admin Prizes page. This only catches
+     * save()-based writes (e.g. the admin edit form); the decrement() used to
+     * reserve stock during a live spin issues a raw single-column SQL update
+     * and never fires this, so PrizeSelectionService::selectAndReserve()
+     * handles that path explicitly.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Prize $prize) {
+            if ($prize->isOutOfStock()) {
+                $prize->win_percentage = 0;
+                $prize->weight = 0;
+            }
+        });
+    }
+
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
+    }
+
+    /**
+     * Whether tracked inventory has run out. Only meaningful when this prize
+     * actually tracks inventory — untracked prizes are never "out of stock".
+     */
+    public function isOutOfStock(): bool
+    {
+        return $this->inventory_enabled && $this->inventory_quantity !== null && $this->inventory_quantity <= 0;
     }
 
     /**
@@ -57,15 +85,7 @@ class Prize extends Model
      */
     public function isWinnable(): bool
     {
-        if (! $this->is_active) {
-            return false;
-        }
-
-        if ($this->inventory_enabled && $this->inventory_quantity !== null && $this->inventory_quantity <= 0) {
-            return false;
-        }
-
-        return true;
+        return $this->is_active && ! $this->isOutOfStock();
     }
 
     public function imageUrl(): ?string
