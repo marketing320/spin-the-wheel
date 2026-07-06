@@ -8,6 +8,7 @@
     <title>{{ $title ?? config('app.name') }}</title>
     <x-head-fonts />
     <script src="{{ asset('js/confettea.min.js') }}?v={{ @filemtime(public_path('js/confettea.min.js')) ?: '1' }}"></script>
+    <script src="https://cdn.lordicon.com/lordicon.js"></script>
     @vite(array_merge(['resources/css/app.css'], (array) ($jsEntry ?? 'resources/js/app.js')))
     @stack('head')
 </head>

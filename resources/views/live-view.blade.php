@@ -61,8 +61,14 @@
                                 <i data-lucide="megaphone" class="animate-pulse-glow h-7 w-7 text-slate-900"></i>
                                
                             </span>--}}
-                            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl text-5xl leading-none">
-                             🎉
+                            <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl text-5xl leading-none">
+                             <lord-icon
+                                src="https://cdn.lordicon.com/mhnfcfpf.json"
+                                trigger="loop"
+                                delay="0"
+                                colors="primary:#aa59d9,secondary:#ffd646,tertiary:#0e75bc,quaternary:#eb242a"
+                                style="width:250px;height:250px">
+                            </lord-icon>
                             </div>
                             <span class="min-w-0 font-display text-center text-4xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">SPIN & WIN!<br>WIN EXCLUSIVE PRIZES WORTH UP TO RM200!</span>
                         </div>
