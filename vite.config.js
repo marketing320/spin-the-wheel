@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/spin/spin-page.js',
                 'resources/js/spin/live-view.js',
+                'resources/js/admin/redeem-scanner.js',
             ],
             refresh: true,
         }),
@@ -46,6 +47,10 @@ export default defineConfig({
                         {
                             name: 'vendor-alpine',
                             test: /[\\/]node_modules[\\/]alpinejs[\\/]/,
+                        },
+                        {
+                            name: 'vendor-qrcode-scanner',
+                            test: /[\\/]node_modules[\\/]html5-qrcode[\\/]/,
                         },
                     ],
                 },

@@ -11,7 +11,7 @@
 #
 # Then add HTTPS (one-time, if you use certbot — swap for your own ACME
 # tooling if this VPS uses something else):
-#   sudo certbot --nginx -d spin.techcountant.cloud
+#   sudo certbot --nginx -d spin.brightstarcomp.my
 # Certbot edits this file in place to add the 443/ssl_certificate block and a
 # redirect from 80 → 443. Re-run `certbot renew` is handled by its own timer.
 # -----------------------------------------------------------------------------
@@ -24,7 +24,7 @@ upstream spin_the_wheel_app {
 server {
     listen 80;
     listen [::]:80;
-    server_name spin.techcountant.cloud;
+    server_name spin.brightstarcomp.my;
 
     # Matches the container's own upload limits (prize / celebration images).
     client_max_body_size 20M;

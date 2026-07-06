@@ -136,6 +136,22 @@
                 </div>
             </div>
 
+            {{-- Redemption --}}
+            <div class="border-t border-slate-200 pt-6 space-y-4">
+                <div>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-600">Redemption</h3>
+                    <p class="mt-0.5 text-xs text-slate-500">
+                        How long a won voucher stays valid before it expires. Individual prizes can override this in Prizes → Voucher expiry override.
+                    </p>
+                </div>
+
+                <div class="max-w-xs">
+                    <label class="label">Default voucher expiry (hours)</label>
+                    <input type="number" wire:model="voucher_expiry_hours" min="1" max="8760" class="field">
+                    @error('voucher_expiry_hours') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
             <div class="flex justify-end pt-2">
                 <button type="submit" class="btn-primary !py-2 text-sm">Save settings</button>
             </div>

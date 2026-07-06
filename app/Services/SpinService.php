@@ -12,6 +12,7 @@ use App\Models\Player;
 use App\Models\Prize;
 use App\Models\SpinResult;
 use App\Models\SpinSession;
+use App\Models\Voucher;
 use App\Support\Settings;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ class SpinService
         protected SpinLockService $lock,
         protected PrizeSelectionService $prizes,
         protected WheelAnimationService $animation,
+        protected VoucherService $vouchers,
     ) {}
 
     /**
@@ -177,19 +179,30 @@ class SpinService
             ])->save();
 
             if ($session->prize_id) {
-                SpinResult::firstOrCreate(
+                $result = SpinResult::firstOrCreate(
                     ['spin_session_id' => $session->id],
                     [
                         'campaign_id' => $session->campaign_id,
                         'player_id' => $session->player_id,
                         'prize_id' => $session->prize_id,
-                        'result_payload' => $this->buildCompletedPayload($session),
                     ]
                 );
+
+                // Auto-generates a voucher (code + expiry) when the prize is
+                // voucher-typed; a no-op otherwise. Idempotent.
+                $voucher = $this->vouchers->generateForResult($result);
+
+                // Snapshot the full outcome (including the voucher, once it
+                // exists) onto the result row for a durable record.
+                $result->forceFill([
+                    'result_payload' => $this->buildCompletedPayload($session, $voucher),
+                ])->save();
             }
         });
 
-        broadcast(new SpinCompleted($this->buildCompletedPayload($session->fresh(['prize']))));
+        $session->refresh();
+        $voucher = $session->result?->voucher;
+        broadcast(new SpinCompleted($this->buildCompletedPayload($session->fresh(['prize']), $voucher)));
 
         return $session;
     }
@@ -246,9 +259,10 @@ class SpinService
     /**
      * @return array<string, mixed>
      */
-    public function buildCompletedPayload(SpinSession $session): array
+    public function buildCompletedPayload(SpinSession $session, ?Voucher $voucher = null): array
     {
         $prize = $session->prize;
+        $voucher ??= $session->result?->voucher;
 
         return [
             'spin_session_id' => $session->id,
@@ -261,7 +275,12 @@ class SpinService
             'confetti_image_count' => (int) Settings::get('celebration.image_count', 30),
             'confetti_image_size' => (int) Settings::get('celebration.image_size', 44),
             'redemption_message' => $prize?->redemption_message,
+            'voucher_code' => $voucher?->code,
+            'voucher_expires_at' => $voucher?->expires_at?->toIso8601String(),
+            'voucher_qr_url' => $voucher ? route('voucher.qr', $voucher->code) : null,
+            'voucher_barcode_url' => $voucher ? route('voucher.barcode', $voucher->code) : null,
             'completed_at_server' => optional($session->completed_at ?? now())->toIso8601String(),
+            'server_time' => now()->toIso8601String(),
         ];
     }
 

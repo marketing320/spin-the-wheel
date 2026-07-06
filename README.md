@@ -164,7 +164,7 @@ sudo ln -s /etc/nginx/sites-available/spin.conf /etc/nginx/sites-enabled/spin.co
 sudo nginx -t && sudo systemctl reload nginx
 
 # One-time HTTPS cert (skip/replace if this box uses a different ACME client)
-sudo certbot --nginx -d spin.techcountant.cloud
+sudo certbot --nginx -d spin.brightstarcomp.my
 ```
 
 `docker/host-nginx/spin.conf.example` is a template vhost that `proxy_pass`es to

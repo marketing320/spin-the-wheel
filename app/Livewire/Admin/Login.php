@@ -22,7 +22,7 @@ class Login extends Component
 
     public function mount(): void
     {
-        if (Auth::guard('web')->check() && Auth::guard('web')->user()->isAdmin()) {
+        if (Auth::guard('web')->check() && Auth::guard('web')->user()->canAccessStaffTools()) {
             $this->redirectRoute('admin.dashboard', navigate: true);
         }
     }
@@ -46,13 +46,13 @@ class Login extends Component
             throw ValidationException::withMessages(['email' => 'These credentials do not match our records.']);
         }
 
-        if (! Auth::guard('web')->user()->isAdmin()) {
+        if (! Auth::guard('web')->user()->canAccessStaffTools()) {
             Auth::guard('web')->logout();
-            throw ValidationException::withMessages(['email' => 'This account does not have admin access.']);
+            throw ValidationException::withMessages(['email' => 'This account does not have admin or staff access.']);
         }
 
         RateLimiter::clear($key);
-        request()->session()->regenerate();
+        session()->regenerate();
 
         return $this->redirectRoute('admin.dashboard', navigate: true);
     }

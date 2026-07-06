@@ -29,12 +29,19 @@ class DatabaseSeeder extends Seeder
     {
         User::updateOrCreate(
             ['email' => 'admin@brightstarcomp.com'],
-            ['name' => 'Administrator', 'password' => Hash::make('password'), 'is_admin' => true]
+            ['name' => 'Administrator', 'password' => Hash::make('password'), 'is_admin' => true, 'is_staff' => false]
         );
 
         User::updateOrCreate(
             ['email' => 'marketing@brightstarcomp.com'],
-            ['name' => 'Brightstar Marketing', 'password' => Hash::make('password'), 'is_admin' => true]
+            ['name' => 'Brightstar Marketing', 'password' => Hash::make('password'), 'is_admin' => true, 'is_staff' => false]
+        );
+
+        // Cashier account: limited surface only (dashboard, spin history,
+        // voucher redemption) — see EnsureStaffAccess / routes/admin.php.
+        User::updateOrCreate(
+            ['email' => 'cashier@brightstarcomp.com'],
+            ['name' => 'Event Cashier', 'password' => Hash::make('password'), 'is_admin' => false, 'is_staff' => true]
         );
     }
 
@@ -71,20 +78,24 @@ class DatabaseSeeder extends Seeder
     protected function seedPrizes(Campaign $campaign): void
     {
         // Flat arcade palette (no gradients): blue, green, teal, purple, yellow.
+        // Columns: name, rarity, color, weight, confetti, redemption message,
+        // type, voucher expiry override (hours; null = use the global default).
         $prizes = [
-            ['Thank You Voucher', 'common', '#0e75bc', 55, 'light', 'Show this screen at the counter to claim your voucher.'],
-            ['Small Gift', 'uncommon', '#24b26b', 25, 'medium', 'Collect your gift at the registration desk.'],
-            ['Discount Voucher', 'rare', '#12a5b0', 12, 'strong', 'Use code SPIN20 for 20% off your next purchase.'],
-            ['Premium Accessory', 'epic', '#7b5cff', 6, 'heavy', 'Our team will contact you to arrange delivery.'],
-            ['Grand Prize', 'legendary', '#f6c31c', 2, 'max', 'Congratulations! Please see the event manager to claim your grand prize.'],
+            ['Thank You Voucher', 'common', '#0e75bc', 55, 'light', 'Show your voucher code/QR at the counter to claim it.', Prize::TYPE_VOUCHER, null],
+            ['Small Gift', 'uncommon', '#24b26b', 25, 'medium', 'Collect your gift at the registration desk.', Prize::TYPE_PHYSICAL, null],
+            ['Discount Voucher', 'rare', '#12a5b0', 12, 'strong', 'Show your voucher code/QR at the counter for 20% off your next purchase.', Prize::TYPE_VOUCHER, 6],
+            ['Premium Accessory', 'epic', '#7b5cff', 6, 'heavy', 'Our team will contact you to arrange delivery.', Prize::TYPE_PHYSICAL, null],
+            ['Grand Prize', 'legendary', '#f6c31c', 2, 'max', 'Congratulations! Please see the event manager to claim your grand prize.', Prize::TYPE_PHYSICAL, null],
         ];
 
-        foreach ($prizes as $i => [$name, $rarity, $color, $weight, $confetti, $redemption]) {
+        foreach ($prizes as $i => [$name, $rarity, $color, $weight, $confetti, $redemption, $type, $voucherExpiryHours]) {
             Prize::updateOrCreate(
                 ['campaign_id' => $campaign->id, 'name' => $name],
                 [
                     'description' => null,
                     'rarity' => $rarity,
+                    'type' => $type,
+                    'voucher_expiry_hours' => $voucherExpiryHours,
                     'color' => $color,
                     'weight' => $weight,
                     'win_percentage' => $weight, // usable if switched to strict mode

@@ -14,12 +14,18 @@ class Prize extends Model
     public const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
     public const CONFETTI_LEVELS = ['light', 'medium', 'strong', 'heavy', 'max'];
 
+    public const TYPE_PHYSICAL = 'physical';
+    public const TYPE_VOUCHER = 'voucher';
+    public const TYPES = [self::TYPE_PHYSICAL, self::TYPE_VOUCHER];
+
     protected $fillable = [
         'campaign_id',
         'name',
         'description',
         'image_path',
         'rarity',
+        'type',
+        'voucher_expiry_hours',
         'color',
         'win_percentage',
         'weight',
@@ -36,6 +42,7 @@ class Prize extends Model
         'weight' => 'integer',
         'inventory_quantity' => 'integer',
         'inventory_enabled' => 'boolean',
+        'voucher_expiry_hours' => 'integer',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
@@ -76,5 +83,10 @@ class Prize extends Model
     public function displayColor(): string
     {
         return $this->color ?: '#6366f1';
+    }
+
+    public function isVoucher(): bool
+    {
+        return $this->type === self::TYPE_VOUCHER;
     }
 }

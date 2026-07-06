@@ -53,6 +53,11 @@ class Player extends Authenticatable implements AuthenticatableContract
         return $this->hasMany(SpinResult::class);
     }
 
+    public function vouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class);
+    }
+
     public function isVerified(): bool
     {
         return $this->otp_verified && $this->email_verified_at !== null;

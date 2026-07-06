@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SpinResult extends Model
 {
@@ -37,5 +38,10 @@ class SpinResult extends Model
     public function prize(): BelongsTo
     {
         return $this->belongsTo(Prize::class);
+    }
+
+    public function voucher(): HasOne
+    {
+        return $this->hasOne(Voucher::class);
     }
 }

@@ -40,6 +40,9 @@ class Settings extends Component
 
     public int $celebration_image_size = 44;
 
+    // Global voucher redemption window; overridable per-prize.
+    public int $voucher_expiry_hours = 24;
+
     public function mount(): void
     {
         $this->otp_expiry_minutes = (int) SettingsStore::get('otp.expiry_minutes');
@@ -57,6 +60,8 @@ class Settings extends Component
         $this->celebration_image_path = SettingsStore::get('celebration.image_path');
         $this->celebration_image_count = (int) SettingsStore::get('celebration.image_count');
         $this->celebration_image_size = (int) SettingsStore::get('celebration.image_size');
+
+        $this->voucher_expiry_hours = (int) SettingsStore::get('redemption.voucher_expiry_hours');
     }
 
     public function rules(): array
@@ -74,6 +79,7 @@ class Settings extends Component
             'celebration_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
             'celebration_image_count' => 'required|integer|min:5|max:120',
             'celebration_image_size' => 'required|integer|min:16|max:160',
+            'voucher_expiry_hours' => 'required|integer|min:1|max:8760',
         ];
     }
 
@@ -98,6 +104,7 @@ class Settings extends Component
             'celebration.image_path' => $this->celebration_image_path,
             'celebration.image_count' => (int) $this->celebration_image_count,
             'celebration.image_size' => (int) $this->celebration_image_size,
+            'redemption.voucher_expiry_hours' => (int) $this->voucher_expiry_hours,
         ]);
 
         $this->reset('celebration_image');

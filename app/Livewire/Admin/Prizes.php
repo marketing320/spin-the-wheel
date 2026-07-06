@@ -26,6 +26,8 @@ class Prizes extends Component
     public string $name = '';
     public ?string $description = null;
     public string $rarity = 'common';
+    public string $type = 'physical';
+    public $voucher_expiry_hours = null;
     public ?string $color = '#6366f1';
     public $win_percentage = null;
     public $weight = null;
@@ -45,6 +47,8 @@ class Prizes extends Component
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'rarity' => ['required', Rule::in(Prize::RARITIES)],
+            'type' => ['required', Rule::in(Prize::TYPES)],
+            'voucher_expiry_hours' => 'nullable|integer|min:1|max:8760',
             'color' => 'nullable|string|max:32',
             'win_percentage' => 'nullable|numeric|min:0|max:100',
             'weight' => 'nullable|integer|min:0',
@@ -63,8 +67,10 @@ class Prizes extends Component
         $this->reset([
             'editingId', 'name', 'description', 'win_percentage', 'weight',
             'inventory_quantity', 'redemption_message', 'image', 'existingImagePath',
+            'voucher_expiry_hours',
         ]);
         $this->rarity = 'common';
+        $this->type = 'physical';
         $this->color = '#6366f1';
         $this->confetti_level = 'light';
         $this->inventory_enabled = false;
@@ -81,6 +87,8 @@ class Prizes extends Component
         $this->name = $p->name;
         $this->description = $p->description;
         $this->rarity = $p->rarity;
+        $this->type = $p->type;
+        $this->voucher_expiry_hours = $p->voucher_expiry_hours;
         $this->color = $p->color ?? '#6366f1';
         $this->win_percentage = $p->win_percentage;
         $this->weight = $p->weight;

@@ -45,6 +45,9 @@ class Settings
             'celebration.image_path' => null,
             'celebration.image_count' => 30,
             'celebration.image_size' => 44,
+
+            // Global voucher redemption window; overridable per-prize.
+            'redemption.voucher_expiry_hours' => 24,
         ];
     }
 

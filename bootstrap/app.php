@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'player.form' => \App\Http\Middleware\EnsurePlayerFormCompleted::class,
             'player.mobile' => \App\Http\Middleware\EnsureMobilePlayerDevice::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'staff' => \App\Http\Middleware\EnsureStaffAccess::class,
         ]);
 
         // Unauthenticated visitors to web-guard routes land on the admin login.

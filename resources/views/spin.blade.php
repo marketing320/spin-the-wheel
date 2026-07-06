@@ -80,6 +80,19 @@
             <div id="result-prize-name" class="mt-3 font-display text-2xl font-bold leading-tight text-slate-900 [word-break:break-word]">—</div>
             <div id="result-rarity" class="mt-3 flex justify-center"></div>
             <p id="result-message" class="mt-4 text-sm text-slate-600"></p>
+
+            {{-- Voucher prizes only: code + QR/barcode + a live countdown to expiry. --}}
+            <div id="result-voucher" class="mt-4 hidden rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
+                <div class="flex items-center justify-center gap-3">
+                    <img id="result-voucher-qr" src="" alt="QR code" class="h-24 w-24 rounded-lg border-2 border-slate-900 bg-white p-1">
+                    <img id="result-voucher-barcode" src="" alt="Barcode" class="h-16 max-w-[9rem] flex-1 rounded-lg border-2 border-slate-900 bg-white p-1">
+                </div>
+                <div id="result-voucher-code" class="mt-3 font-display text-sm font-bold tracking-widest text-slate-900">—</div>
+                <div class="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Expires in</div>
+                <div id="result-voucher-countdown" class="font-display text-2xl font-bold text-cherry-600">00:00:00</div>
+                <p class="mt-2 text-xs text-slate-500">Show this to staff to redeem.</p>
+            </div>
+
             <a id="result-link" href="#" class="btn-primary mt-6 w-full">View prize →</a>
         </div>
     </div>

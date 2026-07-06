@@ -1,18 +1,23 @@
 @props(['title' => 'Dashboard'])
 @php
+    // Fourth element = admin-only. Staff (is_staff, non-admin) only see the
+    // items marked false here — matches the route split in routes/admin.php.
     $nav = [
-        ['admin.dashboard', 'Dashboard', 'layout-dashboard'],
-        ['admin.campaigns', 'Campaigns', 'target'],
-        ['admin.prizes', 'Prizes', 'gift'],
-        ['admin.wheel', 'Wheel Design', 'ferris-wheel'],
-        ['admin.play-rules', 'Play Rules', 'repeat'],
-        ['admin.forms', 'Form Builder', 'clipboard-list'],
-        ['admin.geofence', 'Geofence', 'map-pin'],
-        ['admin.live-view', 'Live View', 'tv'],
-        ['admin.spins', 'Spin History', 'history'],
-        ['admin.players', 'Players', 'users'],
-        ['admin.settings', 'Settings', 'settings'],
+        ['admin.dashboard', 'Dashboard', 'layout-dashboard', false],
+        ['admin.redeem', 'Redeem Voucher', 'scan-line', false],
+        ['admin.campaigns', 'Campaigns', 'target', true],
+        ['admin.prizes', 'Prizes', 'gift', true],
+        ['admin.wheel', 'Wheel Design', 'ferris-wheel', true],
+        ['admin.play-rules', 'Play Rules', 'repeat', true],
+        ['admin.forms', 'Form Builder', 'clipboard-list', true],
+        ['admin.geofence', 'Geofence', 'map-pin', true],
+        ['admin.live-view', 'Live View', 'tv', true],
+        ['admin.spins', 'Spin History', 'history', false],
+        ['admin.players', 'Players', 'users', true],
+        ['admin.settings', 'Settings', 'settings', true],
     ];
+    $isFullAdmin = (bool) auth('web')->user()?->isAdmin();
+    $nav = array_filter($nav, fn ($item) => ! $item[3] || $isFullAdmin);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
@@ -34,7 +39,7 @@
             Admin
         </div>
         <nav class="mt-2 space-y-1 px-3">
-            @foreach ($nav as [$route, $label, $icon])
+            @foreach ($nav as [$route, $label, $icon, $adminOnly])
                 <a href="{{ route($route) }}" wire:navigate @class([
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
                     'bg-brand-50 text-brand-700 ring-1 ring-brand-200' => request()->routeIs($route),

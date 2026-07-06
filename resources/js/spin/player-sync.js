@@ -135,6 +135,54 @@ export function initPlayerPage() {
         }
     }
 
+    let voucherCountdownInterval = null;
+
+    function stopVoucherCountdown() {
+        if (voucherCountdownInterval) {
+            clearInterval(voucherCountdownInterval);
+            voucherCountdownInterval = null;
+        }
+    }
+
+    function showVoucher(result) {
+        const section = modal?.querySelector('#result-voucher');
+        if (!section) return;
+
+        stopVoucherCountdown();
+
+        if (!result.voucher_code) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        section.classList.remove('hidden');
+        section.querySelector('#result-voucher-code').textContent = result.voucher_code;
+        const qr = section.querySelector('#result-voucher-qr');
+        const barcode = section.querySelector('#result-voucher-barcode');
+        if (qr && result.voucher_qr_url) qr.src = result.voucher_qr_url;
+        if (barcode && result.voucher_barcode_url) barcode.src = result.voucher_barcode_url;
+
+        const countdown = section.querySelector('#result-voucher-countdown');
+        const expiresAtMs = Date.parse(result.voucher_expires_at);
+        if (!countdown || !expiresAtMs) return;
+
+        const tick = () => {
+            const remaining = expiresAtMs - controller.serverNow();
+            if (remaining <= 0) {
+                countdown.textContent = 'Expired';
+                stopVoucherCountdown();
+                return;
+            }
+            const h = Math.floor(remaining / 3_600_000);
+            const m = Math.floor((remaining % 3_600_000) / 60_000);
+            const s = Math.floor((remaining % 60_000) / 1000);
+            countdown.textContent = [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
+        };
+
+        tick();
+        voucherCountdownInterval = setInterval(tick, 1000);
+    }
+
     function showResult(result) {
         if (!modal) return;
         const image = modal.querySelector('#result-prize-image');
@@ -148,6 +196,7 @@ export function initPlayerPage() {
             rarity.innerHTML = `<span class="pill bg-slate-100 font-display uppercase text-slate-700 ring-2 ring-slate-300">${result.prize_rarity}</span>`;
         }
         modal.querySelector('#result-message').textContent = result.redemption_message || '';
+        showVoucher(result);
         const link = modal.querySelector('#result-link');
         if (link && mySpinId) link.href = config.routes.result.replace('SPIN_ID', mySpinId);
         modal.classList.remove('hidden');

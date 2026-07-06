@@ -206,7 +206,7 @@ class SpinActionController extends Controller
 
         return response()->json([
             'ok' => true,
-            'result' => $this->spins->buildCompletedPayload($spin->fresh(['prize'])),
+            'result' => $this->spins->buildCompletedPayload($spin->fresh(['prize', 'result.voucher'])),
         ]);
     }
 

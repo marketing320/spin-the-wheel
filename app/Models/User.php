@@ -11,10 +11,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 /**
- * Admin / back-office user. The `is_admin` flag gates access to the admin
- * panel through the App\Policies + admin middleware.
+ * Admin / back-office user. The `is_admin` flag gates the full admin panel;
+ * `is_staff` gates only the limited staff surface (dashboard, spin history,
+ * voucher redemption) — see EnsureAdmin / EnsureStaffAccess middleware.
  */
-#[Fillable(['name', 'email', 'password', 'is_admin'])]
+#[Fillable(['name', 'email', 'password', 'is_admin', 'is_staff'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -32,11 +33,26 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_staff' => 'boolean',
         ];
     }
 
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;
+    }
+
+    public function isStaff(): bool
+    {
+        return (bool) $this->is_staff;
+    }
+
+    /**
+     * Whether this user may access the limited staff surface (redemption,
+     * dashboard, spin history). Admins are always a superset of staff.
+     */
+    public function canAccessStaffTools(): bool
+    {
+        return $this->isAdmin() || $this->isStaff();
     }
 }

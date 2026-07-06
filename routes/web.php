@@ -5,6 +5,8 @@ use App\Http\Controllers\LiveViewController;
 use App\Http\Controllers\PlayerAuthController;
 use App\Http\Controllers\SpinActionController;
 use App\Http\Controllers\SpinController;
+use App\Http\Controllers\VoucherCodeController;
+use App\Livewire\Player\PastPrizes;
 use App\Livewire\Player\Register;
 use App\Livewire\Player\RegistrationForm;
 use App\Livewire\Player\VerifyOtp;
@@ -21,6 +23,11 @@ Route::get('/', [LandingController::class, 'index'])
 // Public event-screen display + its realtime bootstrap endpoint.
 Route::get('/live-view', [LiveViewController::class, 'index'])->name('live-view');
 Route::get('/live-view/active-spin', [LiveViewController::class, 'active'])->name('live-view.active');
+
+// Voucher code images — the code itself is the secret, so these render on
+// the fly without an auth gate (same pattern as a password-reset link).
+Route::get('/voucher/{code}/qr', [VoucherCodeController::class, 'qr'])->name('voucher.qr');
+Route::get('/voucher/{code}/barcode', [VoucherCodeController::class, 'barcode'])->name('voucher.barcode');
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +54,7 @@ Route::middleware(['player.mobile', 'player'])->group(function () {
     Route::middleware('player.form')->group(function () {
         Route::get('/spin', [SpinController::class, 'index'])->name('spin');
         Route::get('/result/{spin}', [SpinController::class, 'result'])->name('spin.result');
+        Route::get('/my-prizes', PastPrizes::class)->name('player.prizes');
 
         // Secure spin action endpoints (session-authenticated JSON).
         Route::prefix('spin')->name('spin.')->group(function () {

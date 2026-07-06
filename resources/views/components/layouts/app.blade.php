@@ -22,6 +22,9 @@
                     <i data-lucide="tv" class="h-4 w-4"></i> Live View
                 </a>--}}
                 @auth('player')
+                    <a href="{{ route('player.prizes') }}" wire:navigate class="btn-ghost !px-3 !py-2 text-xs">
+                        <i data-lucide="gift" class="h-4 w-4"></i> My Prizes
+                    </a>
                     <form method="POST" action="{{ route('player.logout') }}">
                         @csrf
                         <button type="submit" class="btn-ghost !px-3 !py-2 text-xs">Sign out</button>

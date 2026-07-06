@@ -47,6 +47,7 @@
                             <th class="px-4 py-3">Color</th>
                             <th class="px-4 py-3">Name</th>
                             <th class="px-4 py-3">Rarity</th>
+                            <th class="px-4 py-3">Type</th>
                             <th class="px-4 py-3">Odds</th>
                             <th class="px-4 py-3">Stock</th>
                             <th class="px-4 py-3">Active</th>
@@ -68,6 +69,13 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3"><x-rarity-badge :rarity="$prize->rarity" /></td>
+                                <td class="px-4 py-3">
+                                    @if ($prize->isVoucher())
+                                        <span class="pill bg-brand-50 text-brand-700 ring-1 ring-brand-300"><i data-lucide="ticket" class="h-3 w-3"></i> Voucher</span>
+                                    @else
+                                        <span class="pill bg-slate-100 text-slate-600">Physical</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 text-slate-600">
                                     @if ($campaign->prize_mode === \App\Models\Campaign::MODE_STRICT)
                                         {{ $prize->win_percentage !== null ? rtrim(rtrim(number_format((float) $prize->win_percentage, 2), '0'), '.') . '%' : '—' }}
@@ -97,7 +105,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">No prizes yet. Add your first one!</td></tr>
+                            <tr><td colspan="8" class="px-4 py-10 text-center text-slate-500">No prizes yet. Add your first one!</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -138,6 +146,26 @@
                     </select>
                     @error('confetti_level') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
                 </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="label">Prize type</label>
+                    <select wire:model.live="type" class="field">
+                        <option value="physical">Physical</option>
+                        <option value="voucher">Voucher</option>
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500">Voucher prizes auto-generate a redeemable QR/barcode code on win.</p>
+                    @error('type') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
+                </div>
+                @if ($type === 'voucher')
+                    <div>
+                        <label class="label">Voucher expiry override (hours)</label>
+                        <input type="number" min="1" max="8760" wire:model="voucher_expiry_hours" class="field" placeholder="Uses global default">
+                        <p class="mt-1 text-xs text-slate-500">Leave blank to use the global default (Settings → Redemption).</p>
+                        @error('voucher_expiry_hours') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
+                    </div>
+                @endif
             </div>
 
             <div class="grid grid-cols-2 gap-4">

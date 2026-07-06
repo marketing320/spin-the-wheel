@@ -37,7 +37,7 @@ class AdminPagesTest extends TestCase
         $routes = [
             'admin.dashboard', 'admin.campaigns', 'admin.prizes', 'admin.wheel',
             'admin.play-rules', 'admin.forms', 'admin.geofence', 'admin.live-view',
-            'admin.spins', 'admin.players', 'admin.settings',
+            'admin.spins', 'admin.players', 'admin.settings', 'admin.redeem',
         ];
 
         foreach ($routes as $name) {
@@ -50,6 +50,65 @@ class AdminPagesTest extends TestCase
         $this->actingAs(User::factory()->create(['is_admin' => false]), 'web');
 
         $this->get(route('admin.dashboard'))->assertForbidden();
+    }
+
+    public function test_staff_can_log_in_through_the_admin_login_page(): void
+    {
+        $staff = User::factory()->create([
+            'is_admin' => false,
+            'is_staff' => true,
+            'password' => \Illuminate\Support\Facades\Hash::make('password'),
+        ]);
+
+        Livewire::test(\App\Livewire\Admin\Login::class)
+            ->set('email', $staff->email)
+            ->set('password', 'password')
+            ->call('login')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticatedAs($staff, 'web');
+    }
+
+    public function test_user_without_admin_or_staff_cannot_log_in(): void
+    {
+        $plain = User::factory()->create([
+            'is_admin' => false,
+            'is_staff' => false,
+            'password' => \Illuminate\Support\Facades\Hash::make('password'),
+        ]);
+
+        Livewire::test(\App\Livewire\Admin\Login::class)
+            ->set('email', $plain->email)
+            ->set('password', 'password')
+            ->call('login')
+            ->assertHasErrors(['email']);
+
+        $this->assertGuest('web');
+    }
+
+    public function test_staff_can_access_only_the_limited_surface(): void
+    {
+        $staff = User::factory()->create(['is_admin' => false, 'is_staff' => true]);
+        $this->actingAs($staff, 'web');
+
+        foreach (['admin.dashboard', 'admin.spins', 'admin.redeem'] as $name) {
+            $this->get(route($name))->assertOk();
+        }
+
+        foreach ([
+            'admin.campaigns', 'admin.prizes', 'admin.wheel', 'admin.play-rules',
+            'admin.forms', 'admin.geofence', 'admin.live-view', 'admin.players', 'admin.settings',
+        ] as $name) {
+            $this->get(route($name))->assertForbidden();
+        }
+    }
+
+    public function test_plain_user_cannot_access_staff_surface(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => false, 'is_staff' => false]), 'web');
+
+        $this->get(route('admin.redeem'))->assertForbidden();
     }
 
     public function test_spins_csv_export_downloads(): void
@@ -103,6 +162,37 @@ class AdminPagesTest extends TestCase
             ->set('animation_duration_ms', 11000)
             ->call('save')
             ->assertHasErrors(['animation_duration_ms']);
+    }
+
+    public function test_prize_can_be_marked_as_voucher_with_expiry_override(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)
+            ->call('create')
+            ->set('name', 'Free Coffee')
+            ->set('type', 'voucher')
+            ->set('voucher_expiry_hours', 6)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $prize = Prize::where('name', 'Free Coffee')->first();
+        $this->assertNotNull($prize);
+        $this->assertTrue($prize->isVoucher());
+        $this->assertSame(6, $prize->voucher_expiry_hours);
+    }
+
+    public function test_global_voucher_expiry_setting_persists(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(AdminSettings::class)
+            ->assertSet('voucher_expiry_hours', 24)
+            ->set('voucher_expiry_hours', 48)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(48, (int) \App\Support\Settings::get('redemption.voucher_expiry_hours'));
     }
 
     public function test_default_spin_duration_is_configurable(): void
