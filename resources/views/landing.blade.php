@@ -1,4 +1,23 @@
 <x-layouts.app :title="$appName">
+    @push('head')
+        <link rel="icon" href="{{ asset('favicon.ico') }}">
+
+        <meta name="description" content="{{ $tagline }}">
+        <link rel="canonical" href="{{ route('home') }}">
+
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="{{ $appName }}">
+        <meta property="og:title" content="{{ $appName }}">
+        <meta property="og:description" content="{{ $tagline }}">
+        <meta property="og:url" content="{{ route('home') }}">
+        <meta property="og:image" content="{{ asset('favicon.ico') }}">
+
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="{{ $appName }}">
+        <meta name="twitter:description" content="{{ $tagline }}">
+        <meta name="twitter:image" content="{{ asset('favicon.ico') }}">
+    @endpush
+
     <div class="w-full">
         @if ($campaign)
             {{-- Hero --}}
