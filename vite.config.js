@@ -20,4 +20,36 @@ export default defineConfig({
             ignored: ['**/storage/framework/views/**'],
         },
     },
+    build: {
+        // Three.js is intentionally isolated and is ~515 kB before gzip.
+        chunkSizeWarningLimit: 550,
+        rolldownOptions: {
+            output: {
+                codeSplitting: {
+                    groups: [
+                        {
+                            name: 'vendor-three',
+                            test: /[\\/]node_modules[\\/]three[\\/]/,
+                        },
+                        {
+                            name: 'vendor-matter',
+                            test: /[\\/]node_modules[\\/]matter-js[\\/]/,
+                        },
+                        {
+                            name: 'vendor-realtime',
+                            test: /[\\/]node_modules[\\/](?:laravel-echo|pusher-js)[\\/]/,
+                        },
+                        {
+                            name: 'vendor-confetti',
+                            test: /[\\/]node_modules[\\/]canvas-confetti[\\/]/,
+                        },
+                        {
+                            name: 'vendor-alpine',
+                            test: /[\\/]node_modules[\\/]alpinejs[\\/]/,
+                        },
+                    ],
+                },
+            },
+        },
+    },
 });

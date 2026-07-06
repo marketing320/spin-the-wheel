@@ -99,6 +99,28 @@
         box-shadow: 2px 2px 0 0 var(--color-ink);
     }
 
+    /* Consistent tactile press feedback across player and live-view controls. */
+    :is(.player-surface, .live-surface) button:not(:disabled),
+    :is(.player-surface, .live-surface) a:is(.btn-primary, .btn-ghost) {
+        transform-origin: center;
+        transition-property: transform, box-shadow, background-color, color, border-color, opacity;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    :is(.player-surface, .live-surface) button:not(:disabled):active,
+    :is(.player-surface, .live-surface) a:is(.btn-primary, .btn-ghost):active {
+        transform: translate(2px, 2px) scale(.98);
+    }
+
+    :is(.player-surface, .live-surface) :is(.btn-primary, .btn-ghost):active:not(:disabled) {
+        box-shadow: 2px 2px 0 0 var(--color-ink);
+    }
+
+    :is(.player-surface, .live-surface) .animate-pulse-glow:active {
+        animation: none;
+    }
+
     .field {
         @apply w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-slate-900
             placeholder-slate-400 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200;
@@ -149,4 +171,18 @@
 
 .animate-pulse-glow {
     animation: arcade-pop 1.4s steps(8, end) infinite;
+}
+
+/* Explicit press behavior for animated CTAs and stateful spin controls. */
+.pressable-control {
+    transform-origin: center;
+    transition: transform 150ms cubic-bezier(.34, 1.56, .64, 1),
+        box-shadow 150ms cubic-bezier(.34, 1.56, .64, 1),
+        background-color 150ms ease;
+}
+
+.pressable-control:not(:disabled):active {
+    animation: none !important;
+    transform: translate(2px, 2px) scale(.98) !important;
+    box-shadow: 2px 2px 0 0 var(--color-ink) !important;
 }

@@ -10,7 +10,7 @@
     <x-head-fonts />
     @vite(array_merge(['resources/css/app.css'], (array) $jsEntry))
 </head>
-<body class="h-screen overflow-hidden bg-white antialiased">
+<body class="live-surface h-screen overflow-hidden bg-white antialiased">
     {{ $slot }}
     <x-lucide-scripts />
 </body>

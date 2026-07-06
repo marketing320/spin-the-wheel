@@ -11,7 +11,7 @@
     @vite(array_merge(['resources/css/app.css'], (array) ($jsEntry ?? 'resources/js/app.js')))
     @stack('head')
 </head>
-<body class="antialiased">
+<body class="player-surface antialiased">
     <div class="relative flex min-h-screen flex-col">
         <header class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-5 sm:py-5">
             <a href="{{ route('home') }}" class="group flex origin-left items-center gap-2 font-display text-lg font-bold tracking-tight text-slate-900 transition-transform duration-150 ease-[cubic-bezier(.34,1.56,.64,1)] active:translate-x-0.5 active:translate-y-0.5 active:scale-[0.98]">

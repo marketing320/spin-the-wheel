@@ -57,7 +57,7 @@
 
         {{-- Spin button --}}
         <button id="spin-button"
-                class="btn-primary mt-6 w-full py-4 text-xl @if ($eligibility['eligible'] && ! $spinInProgress) animate-pulse-glow @endif"
+                class="pressable-control btn-primary mt-6 w-full py-4 text-xl @if ($eligibility['eligible'] && ! $spinInProgress) animate-pulse-glow @endif"
                 @unless ($eligibility['eligible']) disabled @endunless>
             <span data-label-idle class="inline-flex items-center gap-2"><i data-lucide="sparkles" class="h-6 w-6"></i> <span data-label-idle-text>SPIN!</span></span>
             <span data-label-spinning class="hidden">Spinning…</span>

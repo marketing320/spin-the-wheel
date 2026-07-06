@@ -120,15 +120,16 @@ port **8005**, a **queue worker**, and **MySQL 8** — all in one `docker-compos
 Cache/session/queue use the database, so no Redis is needed. Realtime runs in polling mode
 (`BROADCAST_CONNECTION=log`), so no Reverb container is required.
 
-TLS and the public domain are **not** handled by this stack — it's designed to sit behind a
-**Cloudflare Tunnel** (or a host-level nginx reverse proxy) that forwards to
-`http://localhost:8005`. With a Cloudflare Tunnel you don't need to open any inbound firewall
-port at all, since the tunnel connects outbound from the VPS to Cloudflare.
+This is built for a **shared VPS running several projects behind its own nginx** (no Cloudflare
+Tunnel): the container's port 8005 is bound to `127.0.0.1` only — never exposed to the internet
+directly — and the box's existing nginx reverse-proxies the public domain to it, the same way it
+already fronts your other projects.
 
-**Prerequisites on the VPS (Ubuntu):** Docker Engine + the Compose plugin.
+**Prerequisites on the VPS (Ubuntu):** Docker Engine + the Compose plugin (nginx + certbot are
+assumed already installed, since other projects use them).
 
 ```bash
-# One-time Docker install on Ubuntu
+# One-time Docker install on Ubuntu, if not already present
 curl -fsSL https://get.docker.com | sh
 ```
 
@@ -151,15 +152,30 @@ docker compose up -d --build
 ```
 
 On boot the `app` container waits for MySQL, runs `migrate --force`, links storage, caches
-config/views, and starts nginx + php-fpm on **:8005**. Then point your Cloudflare Tunnel's public
-hostname (or reverse proxy) at `http://localhost:8005` — that's what actually terminates TLS and
-serves the public domain.
+config/views, and starts nginx + php-fpm listening on `127.0.0.1:8005` — reachable only from the
+VPS itself at this point, not the public internet.
+
+**5. Add the host nginx vhost** (this is the piece that makes it public):
+
+```bash
+sudo cp docker/host-nginx/spin.conf.example /etc/nginx/sites-available/spin.conf
+sudo nano /etc/nginx/sites-available/spin.conf   # confirm/edit server_name
+sudo ln -s /etc/nginx/sites-available/spin.conf /etc/nginx/sites-enabled/spin.conf
+sudo nginx -t && sudo systemctl reload nginx
+
+# One-time HTTPS cert (skip/replace if this box uses a different ACME client)
+sudo certbot --nginx -d spin.techcountant.cloud
+```
+
+`docker/host-nginx/spin.conf.example` is a template vhost that `proxy_pass`es to
+`127.0.0.1:8005` with the right forwarded headers and upload size — the same pattern as your
+other projects' site configs, just pointed at this app's port.
 
 **What runs**
 
 | Service | Role |
 |---|---|
-| `app` | nginx + php-fpm on `:8005` (plain HTTP) + migrations on start |
+| `app` | nginx + php-fpm on `127.0.0.1:8005` (plain HTTP, loopback-only) + migrations on start |
 | `queue` | `php artisan queue:work` — broadcasts + failsafe spin completion |
 | `db` | MySQL 8 (named volume `db-data`) |
 
@@ -176,12 +192,13 @@ docker compose down                 # stop (volumes/data preserved)
 git pull && docker compose up -d --build   # deploy an update (re-migrates automatically)
 ```
 
-If port 8005 is already used by another project on the box, change the left-hand side of the
-`ports:` mapping for the `app` service in `docker-compose.yaml` (e.g. `"8006:8005"`) — no other
-file needs to change.
+If port 8005 collides with another project on the box, change **both** sides: the `ports:`
+mapping for the `app` service in `docker-compose.yaml` (e.g. `"127.0.0.1:8006:8005"`, keeping the
+`127.0.0.1:` prefix) **and** the `proxy_pass` port in the host nginx vhost to match.
 
 > To switch on true websockets later: run a Reverb container/command, set
-> `BROADCAST_CONNECTION=reverb` + `VITE_REVERB_ENABLED=true` (rebuild), and route `/app` to it.
+> `BROADCAST_CONNECTION=reverb` + `VITE_REVERB_ENABLED=true` (rebuild), and add the websocket
+> `location /app { ... }` block to the host vhost pointed at the Reverb port.
 
 ---
 

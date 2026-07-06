@@ -1,13 +1,14 @@
-# Spin The Wheel — production stack for a single VPS.
+# Spin The Wheel — production stack for a single VPS (shared with other
+# projects, each on its own port behind the box's own nginx).
 #
 #   1. cp .env.production.example .env   (then fill in secrets + APP_KEY)
 #   2. docker compose up -d --build
+#   3. Add the host nginx vhost — see docker/host-nginx/spin.conf.example
 #
-# The `app` service is nginx + php-fpm, serving plain HTTP on port 8005. TLS
-# and the public domain are handled OUTSIDE this stack — e.g. a Cloudflare
-# Tunnel (or a host-level nginx reverse proxy) forwarding to
-# http://localhost:8005. No inbound firewall ports need to be opened for a
-# Cloudflare Tunnel setup, since the tunnel connects outbound.
+# The `app` service is nginx + php-fpm inside the container, serving plain
+# HTTP on port 8005 — bound to 127.0.0.1 only (see `ports:` below), so it is
+# NOT reachable from the internet directly. TLS and the public domain are
+# handled by this VPS's own nginx, which reverse-proxies to 127.0.0.1:8005.
 
 services:
   app:
@@ -23,7 +24,10 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8005:8005"
+      # Bound to loopback only — this VPS's own nginx reverse-proxies to it.
+      # Do NOT change this to "8005:8005" (that would expose it publicly,
+      # bypassing the host's TLS-terminating nginx).
+      - "127.0.0.1:8005:8005"
     volumes:
       - storage-app:/app/storage/app   # persisted uploads (prize / celebration images)
     healthcheck:

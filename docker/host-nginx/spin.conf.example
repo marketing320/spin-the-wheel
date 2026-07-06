@@ -1,0 +1,51 @@
+# -----------------------------------------------------------------------------
+# HOST-level nginx vhost — this file does NOT run inside Docker. It goes on the
+# VPS itself, alongside the other projects' site configs, and reverse-proxies
+# the public domain to this app's container (bound to 127.0.0.1:8005).
+#
+# Install:
+#   sudo cp docker/host-nginx/spin.conf.example /etc/nginx/sites-available/spin.conf
+#   # edit server_name below to your real domain if different
+#   sudo ln -s /etc/nginx/sites-available/spin.conf /etc/nginx/sites-enabled/spin.conf
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Then add HTTPS (one-time, if you use certbot — swap for your own ACME
+# tooling if this VPS uses something else):
+#   sudo certbot --nginx -d spin.techcountant.cloud
+# Certbot edits this file in place to add the 443/ssl_certificate block and a
+# redirect from 80 → 443. Re-run `certbot renew` is handled by its own timer.
+# -----------------------------------------------------------------------------
+
+upstream spin_the_wheel_app {
+    server 127.0.0.1:8005;
+    keepalive 16;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name spin.techcountant.cloud;
+
+    # Matches the container's own upload limits (prize / celebration images).
+    client_max_body_size 20M;
+
+    location / {
+        proxy_pass http://spin_the_wheel_app;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        # Websocket upgrade support — unused today (VITE_REVERB_ENABLED=false,
+        # polling mode) but harmless to leave in place if that's ever switched on.
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+}

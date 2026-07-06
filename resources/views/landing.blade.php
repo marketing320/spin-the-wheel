@@ -22,9 +22,9 @@
 
                 <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
                     @if ($player && $player->hasCompletedForm())
-                        <a href="{{ route('spin') }}" class="btn-primary animate-pulse-glow text-lg"><i data-lucide="ferris-wheel" class="h-5 w-5"></i> Spin the wheel</a>
+                        <a href="{{ route('spin') }}" class="pressable-control btn-primary animate-pulse-glow text-lg"><i data-lucide="ferris-wheel" class="h-5 w-5"></i> Spin the wheel</a>
                     @else
-                        <a href="{{ route('player.register') }}" wire:navigate class="btn-primary animate-pulse-glow text-lg"><i data-lucide="play" class="h-5 w-5"></i> Play now</a>
+                        <a href="{{ route('player.register') }}" wire:navigate class="pressable-control btn-primary animate-pulse-glow text-lg"><i data-lucide="play" class="h-5 w-5"></i> Play now</a>
                     @endif
                     <a href="{{ route('live-view') }}" target="_blank" class="btn-ghost text-lg"><i data-lucide="tv" class="h-5 w-5"></i> Watch live</a>
                 </div>
