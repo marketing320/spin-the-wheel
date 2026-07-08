@@ -45,12 +45,25 @@
                     <thead class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                         <tr>
                             <th class="px-4 py-3">Color</th>
-                            <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3">Rarity</th>
-                            <th class="px-4 py-3">Type</th>
-                            <th class="px-4 py-3">Odds</th>
-                            <th class="px-4 py-3">Stock</th>
-                            <th class="px-4 py-3">Active</th>
+                            @foreach ([
+                                'name' => 'Name',
+                                'rarity' => 'Rarity',
+                                'type' => 'Type',
+                                'odds' => 'Odds',
+                                'stock' => 'Stock',
+                                'is_active' => 'Active',
+                            ] as $field => $label)
+                                <th class="px-4 py-3">
+                                    <button type="button" wire:click="sortBy('{{ $field }}')" class="inline-flex items-center gap-1 uppercase tracking-wider text-slate-500 hover:text-slate-900">
+                                        {{ $label }}
+                                        @if ($sortField === $field)
+                                            <i data-lucide="{{ $sortDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="h-3.5 w-3.5 text-brand-600"></i>
+                                        @else
+                                            <i data-lucide="chevrons-up-down" class="h-3.5 w-3.5 text-slate-300"></i>
+                                        @endif
+                                    </button>
+                                </th>
+                            @endforeach
                             <th class="px-4 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -100,6 +113,7 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-end gap-2">
                                         <button wire:click="edit({{ $prize->id }})" class="text-xs font-semibold text-brand-700 hover:text-brand-600">Edit</button>
+                                        <button wire:click="duplicate({{ $prize->id }})" class="text-xs font-semibold text-slate-600 hover:text-slate-900">Duplicate</button>
                                         <button wire:click="delete({{ $prize->id }})" wire:confirm="Delete this prize?" class="text-xs font-semibold text-rose-700 hover:text-rose-800">Delete</button>
                                     </div>
                                 </td>

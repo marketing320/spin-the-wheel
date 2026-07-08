@@ -15,6 +15,12 @@ class Prizes extends Component
 {
     use WithFileUploads;
 
+    /** Columns the admin can click to sort the table by. */
+    public const SORTABLE_FIELDS = ['name', 'rarity', 'type', 'odds', 'stock', 'is_active'];
+
+    public string $sortField = 'sort_order';
+    public string $sortDirection = 'asc';
+
     public bool $showModal = false;
 
     public ?int $editingId = null;
@@ -113,6 +119,18 @@ class Prizes extends Component
             return;
         }
 
+        // Blank number inputs arrive over the wire as empty strings, not
+        // null. Left as '', `nullable|integer`/`nullable|numeric` don't
+        // reliably treat it as absent, and it reaches the DB as a literal
+        // '' — which MySQL's strict mode rejects for these integer/decimal
+        // columns. Normalize before validating so a blank field actually
+        // means "use the default" instead of a 500.
+        foreach (['voucher_expiry_hours', 'win_percentage', 'weight', 'inventory_quantity'] as $field) {
+            if ($this->{$field} === '') {
+                $this->{$field} = null;
+            }
+        }
+
         $data = $this->validate();
 
         // Image is stored separately; do not pass the upload object to the model.
@@ -137,13 +155,78 @@ class Prizes extends Component
         $this->dispatch('admin-toast', message: 'Prize deleted.');
     }
 
+    /**
+     * Clone a prize onto a new row (new id). Starts inactive so its odds/
+     * weight don't instantly join the live pool alongside the original —
+     * the admin reviews and activates it manually once it's been adjusted.
+     */
+    public function duplicate(int $id): void
+    {
+        $original = Prize::findOrFail($id);
+
+        $clone = $original->replicate();
+        $clone->is_active = false;
+        $clone->save();
+
+        $this->dispatch('admin-toast', message: 'Prize duplicated — review and activate it when ready.');
+    }
+
+    /**
+     * Toggle sorting for a table column. Clicking the currently-sorted
+     * column flips direction; clicking a different one switches to it
+     * ascending. Unknown fields are ignored (defensive — component
+     * properties are client-settable, so this keeps `sortBy()` itself, not
+     * just the UI, the source of truth for which fields are sortable).
+     */
+    public function sortBy(string $field): void
+    {
+        if (! in_array($field, self::SORTABLE_FIELDS, true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+    }
+
     public function render(PrizeSelectionService $prizeService)
     {
         $campaign = Campaign::current();
 
-        $prizes = $campaign
-            ? $campaign->prizes()->orderBy('sort_order')->orderBy('id')->get()
-            : collect();
+        $prizes = collect();
+
+        if ($campaign) {
+            $query = $campaign->prizes();
+            $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+
+            match ($this->sortField) {
+                'name' => $query->orderBy('name', $direction),
+                'type' => $query->orderBy('type', $direction),
+                'is_active' => $query->orderBy('is_active', $direction),
+                'rarity' => $query->orderByRaw(
+                    'CASE rarity '
+                    .collect(Prize::RARITIES)->map(fn (string $r, int $i) => "WHEN '{$r}' THEN {$i}")->implode(' ')
+                    ." ELSE 99 END {$direction}"
+                ),
+                // "Odds" shows win_percentage in strict mode, weight in weighted mode —
+                // sort by whichever column is actually on screen.
+                'odds' => $query->orderBy(
+                    $campaign->prize_mode === Campaign::MODE_STRICT ? 'win_percentage' : 'weight',
+                    $direction,
+                ),
+                // Untracked stock displays as "∞" — treat it as larger than any real
+                // quantity so it consistently sorts to the "most stock" end.
+                'stock' => $query->orderByRaw(
+                    "(CASE WHEN inventory_enabled = 1 AND inventory_quantity IS NOT NULL THEN inventory_quantity ELSE 999999999 END) {$direction}"
+                ),
+                default => $query->orderBy('sort_order'),
+            };
+
+            $prizes = $query->orderBy('id')->get();
+        }
 
         $config = $campaign ? $prizeService->validateConfiguration($campaign) : null;
 

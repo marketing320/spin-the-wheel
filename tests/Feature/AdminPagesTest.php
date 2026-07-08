@@ -182,6 +182,99 @@ class AdminPagesTest extends TestCase
         $this->assertSame(6, $prize->voucher_expiry_hours);
     }
 
+    public function test_blank_number_fields_save_as_null_instead_of_empty_string(): void
+    {
+        // Regression: wire:model sends a cleared number input as '' (not
+        // null), and '' bound into an integer/decimal column previously blew
+        // up with a strict-mode MySQL error instead of saving as NULL.
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)
+            ->call('create')
+            ->set('name', 'Mystery Voucher')
+            ->set('type', 'voucher')
+            ->set('voucher_expiry_hours', '')
+            ->set('win_percentage', '')
+            ->set('weight', '')
+            ->set('inventory_quantity', '')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $prize = Prize::where('name', 'Mystery Voucher')->first();
+        $this->assertNotNull($prize);
+        $this->assertNull($prize->voucher_expiry_hours);
+        $this->assertNull($prize->win_percentage);
+        $this->assertNull($prize->weight);
+        $this->assertNull($prize->inventory_quantity);
+    }
+
+    public function test_admin_can_sort_prizes_by_name_in_both_directions(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+        $campaign = Campaign::current();
+
+        Prize::factory()->for($campaign)->create(['name' => 'Zebra Prize']);
+        Prize::factory()->for($campaign)->create(['name' => 'Apple Prize']);
+        Prize::factory()->for($campaign)->create(['name' => 'Mango Prize']);
+
+        $component = Livewire::test(\App\Livewire\Admin\Prizes::class)->call('sortBy', 'name');
+
+        $names = fn () => collect($component->viewData('prizes'))
+            ->pluck('name')
+            ->filter(fn ($n) => str_ends_with($n, 'Prize'))
+            ->values()
+            ->all();
+
+        $this->assertSame(['Apple Prize', 'Mango Prize', 'Zebra Prize'], $names());
+
+        $component->call('sortBy', 'name'); // same column again -> flips to descending
+        $this->assertSame(['Zebra Prize', 'Mango Prize', 'Apple Prize'], $names());
+    }
+
+    public function test_admin_can_sort_prizes_by_rarity_rank_not_alphabetically(): void
+    {
+        // "rare" sorts before "uncommon" alphabetically but ranks *higher*
+        // (uncommon=1, rare=2) — a great discriminator between rank-based
+        // and plain alphabetical sorting.
+        $this->actingAs($this->admin(), 'web');
+        $campaign = Campaign::current();
+
+        Prize::factory()->for($campaign)->create(['name' => 'Rare Item', 'rarity' => 'rare']);
+        Prize::factory()->for($campaign)->create(['name' => 'Uncommon Item', 'rarity' => 'uncommon']);
+        Prize::factory()->for($campaign)->create(['name' => 'Common Item', 'rarity' => 'common']);
+
+        $component = Livewire::test(\App\Livewire\Admin\Prizes::class)->call('sortBy', 'rarity');
+
+        $names = collect($component->viewData('prizes'))
+            ->pluck('name')
+            ->filter(fn ($n) => str_ends_with($n, 'Item'))
+            ->values();
+
+        $this->assertSame(['Common Item', 'Uncommon Item', 'Rare Item'], $names->all());
+    }
+
+    public function test_admin_can_duplicate_a_prize(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+        $campaign = Campaign::current();
+
+        $original = Prize::factory()->for($campaign)->create([
+            'name' => 'Grand Prize',
+            'is_active' => true,
+            'weight' => 5,
+        ]);
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)->call('duplicate', $original->id);
+
+        $duplicates = Prize::where('name', 'Grand Prize')->get();
+        $this->assertCount(2, $duplicates);
+
+        $clone = $duplicates->firstWhere('id', '!=', $original->id);
+        $this->assertNotNull($clone);
+        $this->assertFalse($clone->is_active);
+        $this->assertSame(5, $clone->weight);
+    }
+
     public function test_global_voucher_expiry_setting_persists(): void
     {
         $this->actingAs($this->admin(), 'web');
