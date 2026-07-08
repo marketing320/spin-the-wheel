@@ -64,7 +64,7 @@
                                         <i data-lucide="gift" class="h-7 w-7 text-white"></i>
                                     @endif
                                 </div>
-                                <div class="font-display text-sm font-bold text-slate-900">{{ $prize->name }}</div>
+                                <div class="font-display text-sm font-bold text-slate-900 [word-break:break-word]">{{ $prize->name }}</div>
                                 <x-rarity-badge :rarity="$prize->rarity" class="mt-2" />
                             </div>
                         @endforeach

@@ -9,7 +9,7 @@ import { subscribeToSpins } from './live-sync';
 // is playing. Tune this single number to speed up/slow down the idle motion;
 // no other changes needed. Rebuild with `npm run build` after editing.
 // ---------------------------------------------------------------------------
-const IDLE_SPIN_SPEED_DEG_PER_SEC = 24;
+const IDLE_SPIN_SPEED_DEG_PER_SEC = 12;
 
 function initLiveView() {
     const configElement = document.getElementById('live-config');
