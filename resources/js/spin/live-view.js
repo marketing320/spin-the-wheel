@@ -31,6 +31,14 @@ function initLiveView() {
     const soundButton = document.getElementById('enable-sound-button');
     const ctaBanner = document.getElementById('cta-banner');
 
+    // /front-view only — a full-screen admin-uploaded image slideshow that
+    // takes over during idle instead of the spinning wheel. Both are null on
+    // /live-view and /roadshow-live, so all of the logic below is a no-op
+    // there (same optional-element pattern as ctaBanner above).
+    const idleSlideshow = document.getElementById('idle-slideshow');
+    const liveContent = document.getElementById('live-content');
+    const slideEls = idleSlideshow ? Array.from(idleSlideshow.querySelectorAll('.idle-slide')) : [];
+
     // Live prize display above the pointer — shows whatever is under it.
     const prizeChip = document.getElementById('pointer-prize-chip');
     const prizeImage = document.getElementById('pointer-prize-image');
@@ -94,8 +102,49 @@ function initLiveView() {
         hide(ctaBanner);
     }
 
+    // Idle image slideshow (/front-view only): cross-fades through the
+    // admin-uploaded images on a timer. With zero images (banner disabled or
+    // none uploaded yet), slideEls is empty and startIdleSpin() below falls
+    // through to the normal idle-spin wheel instead — this never shows a
+    // blank takeover screen.
+    let slideIndex = 0;
+    let slideTimer = null;
+
+    function showSlide(index) {
+        slideEls.forEach((el, i) => { el.style.opacity = i === index ? '1' : '0'; });
+    }
+
+    function showIdleSlideshow() {
+        show(idleSlideshow);
+        slideIndex = 0;
+        showSlide(slideIndex);
+        if (slideEls.length > 1 && slideTimer === null) {
+            slideTimer = setInterval(() => {
+                slideIndex = (slideIndex + 1) % slideEls.length;
+                showSlide(slideIndex);
+            }, frontViewIntervalMs);
+        }
+    }
+
+    function hideIdleSlideshow() {
+        hide(idleSlideshow);
+        if (slideTimer !== null) {
+            clearInterval(slideTimer);
+            slideTimer = null;
+        }
+    }
+
+    const frontViewIntervalMs = Math.max(2, Number(config.settings.front_view_interval_seconds) || 6) * 1000;
+
     function startIdleSpin() {
         showCtaBanner();
+
+        if (idleSlideshow && slideEls.length > 0) {
+            hide(liveContent);
+            showIdleSlideshow();
+            return;
+        }
+
         if (idleRafId !== null) return;
         idleLastTimestamp = null;
         idleRafId = requestAnimationFrame(idleSpinTick);
@@ -103,6 +152,12 @@ function initLiveView() {
 
     function stopIdleSpin() {
         hideCtaBanner();
+
+        if (idleSlideshow) {
+            hideIdleSlideshow();
+            show(liveContent);
+        }
+
         if (idleRafId !== null) {
             cancelAnimationFrame(idleRafId);
             idleRafId = null;

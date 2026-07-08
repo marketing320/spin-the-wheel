@@ -12,6 +12,7 @@
         ['admin.forms', 'Form Builder', 'clipboard-list', true],
         ['admin.geofence', 'Geofence', 'map-pin', true],
         ['admin.live-view', 'Live View', 'tv', true],
+        ['admin.front-view', 'Front View Banner', 'image', true],
         ['admin.spins', 'Spin History', 'history', false],
         ['admin.players', 'Players', 'users', true],
         ['admin.settings', 'Settings', 'settings', true],

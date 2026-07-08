@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\SpinExportController;
 use App\Livewire\Admin\Campaigns;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\FormsBuilder;
+use App\Livewire\Admin\FrontViewBanner;
 use App\Livewire\Admin\Geofence;
 use App\Livewire\Admin\LiveViewSettings;
 use App\Livewire\Admin\Login;
@@ -41,6 +42,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/forms', FormsBuilder::class)->name('admin.forms');
         Route::get('/geofence', Geofence::class)->name('admin.geofence');
         Route::get('/live-view', LiveViewSettings::class)->name('admin.live-view');
+        Route::get('/front-view', FrontViewBanner::class)->name('admin.front-view');
         Route::get('/players', Players::class)->name('admin.players');
         Route::get('/players/export', [PlayerExportController::class, 'export'])->name('admin.players.export');
         Route::get('/settings', Settings::class)->name('admin.settings');

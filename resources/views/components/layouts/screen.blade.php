@@ -1,4 +1,4 @@
-@props(['title' => 'Live', 'jsEntry' => 'resources/js/app.js'])
+@props(['title' => 'Live', 'jsEntry' => 'resources/js/app.js', 'manifest' => 'manifest-live.json'])
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -7,11 +7,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }}</title>
 
-    {{-- Installable desktop app (live-view / roadshow-live only — see
-         public/manifest-live.json and public/sw-live.js). No offline
-         caching: this display is realtime/server-driven, so a cache layer
-         would risk showing stale spin/queue state instead of any benefit. --}}
-    <link rel="manifest" href="{{ asset('manifest-live.json') }}">
+    {{-- Installable desktop app (live-view / roadshow-live / front-view —
+         see public/manifest-live.json, public/manifest-front-view.json, and
+         the shared public/sw-live.js). No offline caching: these displays
+         are realtime/server-driven, so a cache layer would risk showing
+         stale spin/queue state instead of any benefit. --}}
+    <link rel="manifest" href="{{ asset($manifest) }}">
     <meta name="theme-color" content="#eb242a">
     <link rel="icon" href="{{ asset('icons/live-icon-32.png') }}" sizes="32x32">
     <link rel="apple-touch-icon" href="{{ asset('icons/live-icon-180.png') }}">

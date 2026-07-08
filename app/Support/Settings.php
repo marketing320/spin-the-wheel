@@ -41,6 +41,11 @@ class Settings
             'live_view.cta_message' => '',
             'live_view.cta_color' => 'sun',
 
+            // Full-screen idle banner slideshow for /front-view only.
+            'front_view.enabled' => false,
+            'front_view.interval_seconds' => 6,
+            'front_view.images' => [],
+
             'branding.app_name' => config('app.name'),
             'branding.tagline' => 'Spin to win amazing prizes!',
             'branding.terms' => '',

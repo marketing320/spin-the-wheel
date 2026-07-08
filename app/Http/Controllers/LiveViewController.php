@@ -10,6 +10,7 @@ use App\Services\WheelAnimationService;
 use App\Support\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * The public event-screen display. Mirrors the active player spin in realtime
@@ -37,6 +38,28 @@ class LiveViewController extends Controller
     public function roadshow(): View
     {
         return view('roadshow-live', $this->sharedData());
+    }
+
+    /**
+     * Full-screen roadshow display: identical to /roadshow-live, except idle
+     * shows an admin-uploaded image slideshow (full takeover) instead of the
+     * idle-spinning wheel — see resources/js/spin/live-view.js's optional
+     * #idle-slideshow/#live-content handling. With the banner disabled or no
+     * images uploaded, it silently falls back to the normal idle-spin wheel.
+     */
+    public function frontView(): View
+    {
+        $data = $this->sharedData();
+
+        $enabled = (bool) Settings::get('front_view.enabled');
+        $images = $enabled ? (array) Settings::get('front_view.images', []) : [];
+
+        $data['settings']['front_view_images'] = collect($images)
+            ->map(fn (string $path) => Storage::disk('public')->url($path))
+            ->all();
+        $data['settings']['front_view_interval_seconds'] = (int) Settings::get('front_view.interval_seconds', 6);
+
+        return view('front-view', $data);
     }
 
     /**
