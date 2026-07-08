@@ -26,10 +26,28 @@ class LiveViewController extends Controller
 
     public function index(): View
     {
+        return view('live-view', $this->sharedData());
+    }
+
+    /**
+     * Portrait layout for LED roadshow panels (344px single / 688px double).
+     * Same data, same realtime JS (resources/js/spin/live-view.js) and the
+     * same DOM element IDs as /live-view — only the Blade markup/CSS differ.
+     */
+    public function roadshow(): View
+    {
+        return view('roadshow-live', $this->sharedData());
+    }
+
+    /**
+     * @return array{campaign: ?Campaign, segments: array, settings: array, queue: array}
+     */
+    protected function sharedData(): array
+    {
         $campaign = Campaign::current();
         $segments = $campaign ? $this->animation->segments($campaign) : [];
 
-        return view('live-view', [
+        return [
             'campaign' => $campaign,
             'segments' => $segments,
             'settings' => [
@@ -41,7 +59,7 @@ class LiveViewController extends Controller
                 'cta_color' => (string) Settings::get('live_view.cta_color', 'sun'),
             ],
             'queue' => $this->queue->snapshot($campaign),
-        ]);
+        ];
     }
 
     /**

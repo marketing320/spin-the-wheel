@@ -24,6 +24,9 @@ Route::get('/', [LandingController::class, 'index'])
 Route::get('/live-view', [LiveViewController::class, 'index'])->name('live-view');
 Route::get('/live-view/active-spin', [LiveViewController::class, 'active'])->name('live-view.active');
 
+// Portrait LED roadshow display — same data/realtime endpoint as /live-view.
+Route::get('/roadshow-live', [LiveViewController::class, 'roadshow'])->name('roadshow-live');
+
 // Voucher code images — the code itself is the secret, so these render on
 // the fly without an auth gate (same pattern as a password-reset link).
 Route::get('/voucher/{code}/qr', [VoucherCodeController::class, 'qr'])->name('voucher.qr');
