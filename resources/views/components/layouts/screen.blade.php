@@ -13,7 +13,7 @@
          are realtime/server-driven, so a cache layer would risk showing
          stale spin/queue state instead of any benefit. --}}
     <link rel="manifest" href="{{ asset($manifest) }}">
-    <meta name="theme-color" content="#eb242a">
+    <meta name="theme-color" content="#0e75bc">
     <link rel="icon" href="{{ asset('icons/live-icon-32.png') }}" sizes="32x32">
     <link rel="apple-touch-icon" href="{{ asset('icons/live-icon-180.png') }}">
 
