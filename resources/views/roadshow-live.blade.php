@@ -54,10 +54,19 @@
             <div id="cta-banner" class="hidden mt-3 w-full shrink-0 items-stretch overflow-hidden rounded-xl border-[3px] border-slate-900 bg-white pixel-shadow">
                 <span class="w-2 shrink-0" style="background:{{ $ctaAccentHex }}"></span>
                 <div class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5">
-                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border-2 border-slate-900" style="background:{{ $ctaAccentHex }}">
+                    {{--<span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border-2 border-slate-900" style="background:{{ $ctaAccentHex }}">
                         <i data-lucide="megaphone" class="animate-pulse-glow h-4 w-4 text-slate-900"></i>
-                    </span>
-                    <span class="min-w-0 font-display font-bold uppercase leading-snug text-slate-900" style="font-size: clamp(0.7rem, 3.6vw, 1.25rem);">{{ $settings['cta_message'] }}</span>
+                    </span>--}}
+                    <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl text-5xl leading-none">
+                            <lord-icon
+                            src="https://cdn.lordicon.com/mhnfcfpf.json"
+                            trigger="loop"
+                            delay="0"
+                            colors="primary:#aa59d9,secondary:#ffd646,tertiary:#0e75bc,quaternary:#eb242a"
+                            style="width:250px;height:250px">
+                        </lord-icon>
+                    </div>
+                    <span class="min-w-0 font-display font-bold uppercase leading-snug text-slate-900" style="font-size: clamp(0.7rem, 3.6vw, 1.25rem);">SPIN & WIN!<br>WIN EXCLUSIVE PRIZES WORTH UP TO RM200!</span>
                 </div>
             </div>
         @endif
