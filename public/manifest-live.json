@@ -1,0 +1,15 @@
+{
+    "name": "Spin The Wheel — Live Display",
+    "short_name": "Live Display",
+    "description": "Public event-screen display for the Spin The Wheel prize game — mirrors the active player spin in realtime.",
+    "start_url": "/live-view",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#ffffff",
+    "theme_color": "#eb242a",
+    "icons": [
+        { "src": "/icons/live-icon-192.png", "sizes": "192x192", "type": "image/png" },
+        { "src": "/icons/live-icon-512.png", "sizes": "512x512", "type": "image/png" }
+    ]
+}
