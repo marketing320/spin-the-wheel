@@ -7,6 +7,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name') }}</title>
     <x-head-fonts />
+    {{-- Livewire only auto-injects its JS (which bundles Alpine) on pages
+         that render an actual Livewire component. Several pages under this
+         layout (landing, /spin, /result) are plain controllers with no
+         Livewire component, so without this explicit directive, Alpine
+         never loads there and any x-data/@click/x-show markup is inert. --}}
+    @livewireStyles
     <script src="{{ asset('js/confettea.min.js') }}?v={{ @filemtime(public_path('js/confettea.min.js')) ?: '1' }}"></script>
     @vite(array_merge(['resources/css/app.css'], (array) ($jsEntry ?? 'resources/js/app.js')))
     @stack('head')
@@ -16,7 +22,7 @@
         <header class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-5 sm:py-5">
             <a href="{{ route('home') }}" class="group flex origin-left items-center transition-transform duration-150 ease-[cubic-bezier(.34,1.56,.64,1)] active:translate-x-0.5 active:translate-y-0.5 active:scale-[0.98]">
                 <span class="flex h-10 items-center rounded-lg border-2 border-slate-900 bg-white px-2.5 pixel-shadow transition-all duration-150 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:translate-x-0.5 group-active:translate-y-0.5 group-active:scale-95 group-active:shadow-[2px_2px_0_0_#0f172a]">
-                    <img src="{{ asset('logo.png') }}" alt="{{ config('app.name') }}" class="h-6 w-auto object-contain">
+                    <img src="{{ asset('logo-black.png') }}" alt="{{ config('app.name') }}" class="h-6 w-auto object-contain">
                 </span>
             </a>
 
@@ -79,5 +85,6 @@
     <style>[x-cloak]{display:none!important}</style>
     <x-lucide-scripts />
     @stack('scripts')
+    @livewireScripts
 </body>
 </html>
