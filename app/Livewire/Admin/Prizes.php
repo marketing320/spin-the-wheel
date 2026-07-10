@@ -43,6 +43,19 @@ class Prizes extends Component
     public ?string $redemption_message = null;
     public bool $is_active = true;
     public int $sort_order = 0;
+    public int $segment_count = 1;
+
+    /** Maximum wheel slots a single prize may occupy. */
+    public const MAX_SEGMENT_COUNT = 10;
+
+    /** Preset odds share (%) per rarity tier, used by autoDistributeByRarity(). */
+    public const RARITY_SHARE = [
+        'common' => 45,
+        'uncommon' => 25,
+        'rare' => 15,
+        'epic' => 10,
+        'legendary' => 5,
+    ];
 
     // Uploaded image (TemporaryUploadedFile) or null.
     public $image = null;
@@ -64,6 +77,7 @@ class Prizes extends Component
             'redemption_message' => 'nullable|string',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
+            'segment_count' => 'required|integer|min:1|max:'.self::MAX_SEGMENT_COUNT,
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ];
     }
@@ -82,6 +96,7 @@ class Prizes extends Component
         $this->inventory_enabled = false;
         $this->is_active = true;
         $this->sort_order = 0;
+        $this->segment_count = 1;
         $this->resetValidation();
         $this->showModal = true;
     }
@@ -103,6 +118,7 @@ class Prizes extends Component
         $this->confetti_level = $p->confetti_level;
         $this->redemption_message = $p->redemption_message;
         $this->is_active = $p->is_active;
+        $this->segment_count = $p->segment_count;
         $this->sort_order = $p->sort_order;
         $this->existingImagePath = $p->image_path;
         $this->image = null;
@@ -153,6 +169,77 @@ class Prizes extends Component
     {
         Prize::findOrFail($id)->delete();
         $this->dispatch('admin-toast', message: 'Prize deleted.');
+    }
+
+    /**
+     * Inline odds edit from the index page — updates just the field the
+     * current campaign mode actually uses (win_percentage in strict mode,
+     * weight in weighted mode), without opening the edit modal.
+     */
+    public function updateOdds(int $prizeId, mixed $value): void
+    {
+        $campaign = Campaign::current();
+        if (! $campaign) {
+            return;
+        }
+
+        $prize = Prize::query()->where('campaign_id', $campaign->id)->find($prizeId);
+        if (! $prize) {
+            return;
+        }
+
+        $value = $value === '' || $value === null ? 0 : $value;
+
+        if ($campaign->prize_mode === Campaign::MODE_STRICT) {
+            $prize->win_percentage = round(min(100, max(0, (float) $value)), 4);
+        } else {
+            $prize->weight = max(0, (int) $value);
+        }
+
+        $prize->save();
+        $this->dispatch('admin-toast', message: 'Odds updated.');
+    }
+
+    /**
+     * One-click reset: recalculates odds for every active prize from a fixed
+     * rarity-tier ratio (common gets the biggest share, legendary the
+     * smallest), split evenly among prizes sharing a rarity, re-normalized
+     * to only the rarities actually present so nothing is wasted on empty
+     * tiers. Overwrites whatever was configured before.
+     */
+    public function autoDistributeByRarity(): void
+    {
+        $campaign = Campaign::current();
+        if (! $campaign) {
+            return;
+        }
+
+        $byRarity = $campaign->prizes()->where('is_active', true)->get()->groupBy('rarity');
+
+        if ($byRarity->isEmpty()) {
+            $this->dispatch('admin-toast', message: 'No active prizes to distribute.');
+
+            return;
+        }
+
+        $presentShare = collect(self::RARITY_SHARE)->only($byRarity->keys())->sum();
+
+        foreach ($byRarity as $rarity => $group) {
+            $shareForRarity = ((self::RARITY_SHARE[$rarity] ?? 0) / $presentShare) * 100;
+            $perPrize = $shareForRarity / $group->count();
+
+            foreach ($group as $prize) {
+                if ($campaign->prize_mode === Campaign::MODE_STRICT) {
+                    $prize->win_percentage = round($perPrize, 2);
+                } else {
+                    // Scale the percentage share into a clean integer weight.
+                    $prize->weight = max(1, (int) round($perPrize * 10));
+                }
+                $prize->save();
+            }
+        }
+
+        $this->dispatch('admin-toast', message: 'Odds auto-distributed by rarity.');
     }
 
     /**

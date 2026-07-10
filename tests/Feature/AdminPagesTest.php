@@ -208,6 +208,124 @@ class AdminPagesTest extends TestCase
         $this->assertNull($prize->inventory_quantity);
     }
 
+    public function test_admin_can_configure_wheel_segment_count_for_a_prize(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)
+            ->call('create')
+            ->set('name', 'Small Gift')
+            ->set('segment_count', 3)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $prize = Prize::where('name', 'Small Gift')->first();
+        $this->assertSame(3, $prize->segment_count);
+    }
+
+    public function test_segment_count_must_be_at_least_one(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)
+            ->call('create')
+            ->set('name', 'Broken Segment Prize')
+            ->set('segment_count', 0)
+            ->call('save')
+            ->assertHasErrors(['segment_count']);
+    }
+
+    public function test_admin_can_inline_update_win_percentage_in_strict_mode(): void
+    {
+        $campaign = Campaign::current();
+        $campaign->update(['prize_mode' => Campaign::MODE_STRICT]);
+        $prize = Prize::factory()->for($campaign)->create(['win_percentage' => 10]);
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)->call('updateOdds', $prize->id, 42.5);
+
+        $this->assertEquals(42.5, $prize->fresh()->win_percentage);
+    }
+
+    public function test_inline_win_percentage_update_is_clamped_to_100(): void
+    {
+        $campaign = Campaign::current();
+        $campaign->update(['prize_mode' => Campaign::MODE_STRICT]);
+        $prize = Prize::factory()->for($campaign)->create(['win_percentage' => 10]);
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)->call('updateOdds', $prize->id, 250);
+
+        $this->assertEquals(100, $prize->fresh()->win_percentage);
+    }
+
+    public function test_admin_can_inline_update_weight_in_weighted_mode(): void
+    {
+        $campaign = Campaign::current();
+        $campaign->update(['prize_mode' => Campaign::MODE_WEIGHTED]);
+        $prize = Prize::factory()->for($campaign)->create(['weight' => 10]);
+        $this->actingAs($this->admin(), 'web');
+
+        Livewire::test(\App\Livewire\Admin\Prizes::class)->call('updateOdds', $prize->id, 77);
+
+        $this->assertSame(77, $prize->fresh()->weight);
+    }
+
+    public function test_auto_distribute_assigns_odds_by_rarity_rank_in_strict_mode(): void
+    {
+        $campaign = Campaign::current();
+        $campaign->update(['prize_mode' => Campaign::MODE_STRICT]);
+        // setUp() already seeded a default "common" prize — remove it so this
+        // test's rarity mix (and its 100%-total assertion) is exact.
+        Prize::query()->where('campaign_id', $campaign->id)->delete();
+        $common = Prize::factory()->for($campaign)->create(['rarity' => 'common', 'win_percentage' => 0]);
+        $rare = Prize::factory()->for($campaign)->create(['rarity' => 'rare', 'win_percentage' => 0]);
+        $legendary = Prize::factory()->for($campaign)->create(['rarity' => 'legendary', 'win_percentage' => 0]);
+
+        $this->actingAs($this->admin(), 'web');
+        Livewire::test(\App\Livewire\Admin\Prizes::class)->call('autoDistributeByRarity');
+
+        $common->refresh();
+        $rare->refresh();
+        $legendary->refresh();
+
+        // Common (45 share) > Rare (15 share) > Legendary (5 share).
+        $this->assertGreaterThan((float) $rare->win_percentage, (float) $common->win_percentage);
+        $this->assertGreaterThan((float) $legendary->win_percentage, (float) $rare->win_percentage);
+
+        $total = (float) $common->win_percentage + (float) $rare->win_percentage + (float) $legendary->win_percentage;
+        $this->assertEqualsWithDelta(100.0, $total, 0.1);
+    }
+
+    public function test_auto_distribute_splits_evenly_among_prizes_sharing_a_rarity(): void
+    {
+        $campaign = Campaign::current();
+        $campaign->update(['prize_mode' => Campaign::MODE_STRICT]);
+        $commonOne = Prize::factory()->for($campaign)->create(['rarity' => 'common']);
+        $commonTwo = Prize::factory()->for($campaign)->create(['rarity' => 'common']);
+
+        $this->actingAs($this->admin(), 'web');
+        Livewire::test(\App\Livewire\Admin\Prizes::class)->call('autoDistributeByRarity');
+
+        $this->assertEqualsWithDelta(
+            (float) $commonOne->fresh()->win_percentage,
+            (float) $commonTwo->fresh()->win_percentage,
+            0.01,
+        );
+    }
+
+    public function test_auto_distribute_overwrites_previously_configured_odds(): void
+    {
+        $campaign = Campaign::current();
+        $campaign->update(['prize_mode' => Campaign::MODE_STRICT]);
+        $prize = Prize::factory()->for($campaign)->create(['rarity' => 'common', 'win_percentage' => 99]);
+
+        $this->actingAs($this->admin(), 'web');
+        Livewire::test(\App\Livewire\Admin\Prizes::class)->call('autoDistributeByRarity');
+
+        $this->assertNotEquals(99, (float) $prize->fresh()->win_percentage);
+    }
+
     public function test_admin_can_sort_prizes_by_name_in_both_directions(): void
     {
         $this->actingAs($this->admin(), 'web');

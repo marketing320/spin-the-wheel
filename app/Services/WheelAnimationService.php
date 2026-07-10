@@ -21,7 +21,15 @@ use Illuminate\Support\Collection;
 class WheelAnimationService
 {
     /**
-     * Ordered wheel segments for a campaign.
+     * Ordered wheel segments for a campaign. A prize with segment_count > 1
+     * occupies that many slots — its actual winning odds stay whatever
+     * win_percentage/weight says regardless of how many slots it has; see
+     * indexOfPrize(), which picks randomly among a winner's slots.
+     *
+     * Slots are interleaved round-robin across prizes (each prize's first
+     * slot, then each prize's second slot that has one, etc.) rather than
+     * placed consecutively, so a multi-segment prize's copies are spread
+     * around the wheel instead of clustered in one block.
      *
      * @param  Collection<int, Prize>|null  $prizes
      * @return array<int, array<string, mixed>>
@@ -30,7 +38,19 @@ class WheelAnimationService
     {
         $prizes ??= $campaign->activePrizes()->get();
 
-        return $prizes->values()->map(fn (Prize $prize, int $index) => [
+        $queues = $prizes->values()->map(fn (Prize $prize) => array_fill(0, max(1, $prize->segment_count), $prize));
+        $maxSlots = (int) ($queues->map(fn (array $q) => count($q))->max() ?? 0);
+
+        $ordered = collect();
+        for ($round = 0; $round < $maxSlots; $round++) {
+            foreach ($queues as $queue) {
+                if (isset($queue[$round])) {
+                    $ordered->push($queue[$round]);
+                }
+            }
+        }
+
+        return $ordered->values()->map(fn (Prize $prize, int $index) => [
             'index' => $index,
             'prize_id' => $prize->id,
             'label' => $prize->name,
@@ -78,18 +98,24 @@ class WheelAnimationService
     }
 
     /**
-     * Locate a prize's segment index within an ordered segment list.
+     * Locate a prize's segment index within an ordered segment list. When the
+     * prize occupies multiple slots (segment_count > 1), one is chosen at
+     * random each time — purely which slot the wheel visually lands on, not
+     * a second roll of the actual odds (the prize was already selected).
      *
      * @param  array<int, array<string, mixed>>  $segments
      */
     public function indexOfPrize(array $segments, int $prizeId): int
     {
-        foreach ($segments as $segment) {
-            if ((int) $segment['prize_id'] === $prizeId) {
-                return (int) $segment['index'];
-            }
+        $matches = array_values(array_filter(
+            $segments,
+            fn (array $segment) => (int) $segment['prize_id'] === $prizeId,
+        ));
+
+        if (empty($matches)) {
+            return 0;
         }
 
-        return 0;
+        return (int) $matches[random_int(0, count($matches) - 1)]['index'];
     }
 }

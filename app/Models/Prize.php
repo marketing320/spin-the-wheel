@@ -35,6 +35,7 @@ class Prize extends Model
         'redemption_message',
         'is_active',
         'sort_order',
+        'segment_count',
     ];
 
     protected $casts = [
@@ -45,6 +46,7 @@ class Prize extends Model
         'voucher_expiry_hours' => 'integer',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'segment_count' => 'integer',
     ];
 
     /**

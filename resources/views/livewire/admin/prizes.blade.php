@@ -13,13 +13,20 @@
     @else
         {{-- Probability / configuration panel --}}
         <div class="glass mb-5 rounded-2xl p-4">
-            <div class="flex flex-wrap items-center gap-2 text-sm">
-                <span class="pill bg-slate-100 text-slate-700">Mode: {{ ucfirst($campaign->prize_mode) }}</span>
-                @if ($campaign->prize_mode === \App\Models\Campaign::MODE_STRICT)
-                    <span class="pill bg-brand-50 text-brand-700 ring-1 ring-brand-300">Total: {{ number_format($config['total_percentage'], 2) }}%</span>
-                @else
-                    <span class="pill bg-brand-50 text-brand-700 ring-1 ring-brand-300">Total weight: {{ $config['total_weight'] }}</span>
-                @endif
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-2 text-sm">
+                    <span class="pill bg-slate-100 text-slate-700">Mode: {{ ucfirst($campaign->prize_mode) }}</span>
+                    @if ($campaign->prize_mode === \App\Models\Campaign::MODE_STRICT)
+                        <span class="pill bg-brand-50 text-brand-700 ring-1 ring-brand-300">Total: {{ number_format($config['total_percentage'], 2) }}%</span>
+                    @else
+                        <span class="pill bg-brand-50 text-brand-700 ring-1 ring-brand-300">Total weight: {{ $config['total_weight'] }}</span>
+                    @endif
+                </div>
+                <button type="button" wire:click="autoDistributeByRarity"
+                        wire:confirm="Recalculate odds for every active prize based on rarity (Common gets the biggest share, Legendary the smallest)? This overwrites current values."
+                        class="btn-ghost !py-1.5 text-xs">
+                    <i data-lucide="shuffle" class="h-3.5 w-3.5"></i> Auto-distribute by rarity
+                </button>
             </div>
 
             @if (! empty($config['warnings']))
@@ -90,11 +97,34 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-slate-600">
-                                    @if ($campaign->prize_mode === \App\Models\Campaign::MODE_STRICT)
-                                        {{ $prize->win_percentage !== null ? rtrim(rtrim(number_format((float) $prize->win_percentage, 2), '0'), '.') . '%' : '—' }}
-                                    @else
-                                        w:{{ $prize->weight ?? 0 }}
-                                    @endif
+                                    <div x-data="{
+                                            editing: false,
+                                            value: {{ $campaign->prize_mode === \App\Models\Campaign::MODE_STRICT ? (float) ($prize->win_percentage ?? 0) : (int) ($prize->weight ?? 0) }},
+                                            commit() {
+                                                this.editing = false;
+                                                $wire.updateOdds({{ $prize->id }}, this.value);
+                                            },
+                                         }">
+                                        <span x-show="!editing" @click="editing = true" class="cursor-pointer rounded px-1.5 py-0.5 hover:bg-slate-200" title="Click to edit">
+                                            @if ($campaign->prize_mode === \App\Models\Campaign::MODE_STRICT)
+                                                {{ $prize->win_percentage !== null ? rtrim(rtrim(number_format((float) $prize->win_percentage, 2), '0'), '.') . '%' : '—' }}
+                                            @else
+                                                w:{{ $prize->weight ?? 0 }}
+                                            @endif
+                                        </span>
+                                        <input x-show="editing" x-cloak
+                                               x-ref="input"
+                                               x-model.number="value"
+                                               x-init="$watch('editing', (v) => v && $nextTick(() => $refs.input.focus()))"
+                                               @keydown.enter="commit()"
+                                               @keydown.escape="editing = false"
+                                               @blur="commit()"
+                                               type="number"
+                                               step="{{ $campaign->prize_mode === \App\Models\Campaign::MODE_STRICT ? '0.01' : '1' }}"
+                                               min="0"
+                                               @if ($campaign->prize_mode === \App\Models\Campaign::MODE_STRICT) max="100" @endif
+                                               class="w-20 rounded border border-slate-300 px-2 py-1 text-sm">
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600">
                                     @if ($prize->inventory_enabled)
@@ -196,6 +226,13 @@
                     <input type="number" wire:model="sort_order" class="field">
                     @error('sort_order') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
                 </div>
+            </div>
+
+            <div>
+                <label class="label">Wheel segments</label>
+                <input type="number" min="1" max="{{ \App\Livewire\Admin\Prizes::MAX_SEGMENT_COUNT }}" wire:model="segment_count" class="field" style="max-width: 8rem;">
+                <p class="mt-1 text-xs text-slate-500">How many slots this prize occupies on the wheel — set above 1 to have it appear in multiple spots for visual variety. Its actual winning odds stay the total for the prize either way, not per-slot.</p>
+                @error('segment_count') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
             </div>
 
             <div class="grid grid-cols-2 gap-4">
