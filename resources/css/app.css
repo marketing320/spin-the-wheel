@@ -190,6 +190,36 @@
     animation: cta-pop-in 380ms cubic-bezier(.34, 1.56, .64, 1) both;
 }
 
+/* Prize coverflow slider (landing page) — dim non-active slides and give
+   pagination dots the same flat pixel look as the rest of the UI. */
+.prize-swiper .swiper-slide {
+    transition: opacity 250ms ease;
+    opacity: 0.5;
+}
+
+.prize-swiper .swiper-slide-active,
+.prize-swiper .swiper-slide-prev,
+.prize-swiper .swiper-slide-next {
+    opacity: 1;
+}
+
+.prize-swiper-pagination .swiper-pagination-bullet {
+    width: 10px;
+    height: 10px;
+    margin: 0 !important;
+    border-radius: 3px;
+    background: #ffffff;
+    border: 2px solid var(--color-ink);
+    opacity: 1;
+    cursor: pointer;
+    transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.prize-swiper-pagination .swiper-pagination-bullet-active {
+    background: var(--color-cherry-500);
+    transform: scale(1.2);
+}
+
 /* Explicit press behavior for animated CTAs and stateful spin controls. */
 .pressable-control {
     transform-origin: center;

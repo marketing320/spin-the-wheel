@@ -8,6 +8,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
+                'resources/js/landing.js',
                 'resources/js/spin/spin-page.js',
                 'resources/js/spin/live-view.js',
                 'resources/js/admin/redeem-scanner.js',
@@ -51,6 +52,10 @@ export default defineConfig({
                         {
                             name: 'vendor-qrcode-scanner',
                             test: /[\\/]node_modules[\\/]html5-qrcode[\\/]/,
+                        },
+                        {
+                            name: 'vendor-swiper',
+                            test: /[\\/]node_modules[\\/]swiper[\\/]/,
                         },
                     ],
                 },

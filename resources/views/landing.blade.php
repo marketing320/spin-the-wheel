@@ -1,4 +1,4 @@
-<x-layouts.app :title="$appName">
+<x-layouts.app :title="$appName" :jsEntry="['resources/js/app.js', 'resources/js/landing.js']">
     @push('head')
         <link rel="icon" href="{{ asset('favicon.ico') }}">
 
@@ -51,23 +51,50 @@
 
             {{-- Prizes --}}
             @if ($prizes->isNotEmpty())
-                <div class="mx-auto mt-16 max-w-4xl">
+                <div class="mx-auto mt-16 w-full max-w-5xl">
                     <h2 class="mb-6 text-center font-display text-sm font-bold uppercase tracking-widest text-brand-600">Prizes up for grabs</h2>
-                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                        @foreach ($prizes as $prize)
-                            <div class="rounded-2xl border-[3px] border-slate-900 bg-white p-4 text-center pixel-shadow transition hover:-translate-y-1">
-                                <div class="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-xl border-2 border-slate-900"
-                                     style="background: {{ $prize->displayColor() }}">
-                                    @if ($prize->imageUrl())
-                                        <img src="{{ $prize->imageUrl() }}" alt="" class="h-12 w-12 rounded-lg object-cover">
-                                    @else
-                                        <i data-lucide="gift" class="h-7 w-7 text-white"></i>
-                                    @endif
+
+                    <div class="prize-slider">
+                        <div class="relative">
+                            <div class="prize-swiper swiper !py-8">
+                                <div class="swiper-wrapper !items-stretch">
+                                    @foreach ($prizes as $prize)
+                                        <div class="swiper-slide !h-auto !w-60 sm:!w-72">
+                                            <div class="flex h-full flex-col rounded-2xl border-[3px] border-slate-900 bg-white p-5 text-center pixel-shadow">
+                                                <div class="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-xl border-2 border-slate-900"
+                                                     style="background: {{ $prize->displayColor() }}">
+                                                    @if ($prize->imageUrl())
+                                                        <img src="{{ $prize->imageUrl() }}" alt="" class="h-20 w-20 rounded-lg object-cover">
+                                                    @else
+                                                        <i data-lucide="gift" class="h-10 w-10 text-white"></i>
+                                                    @endif
+                                                </div>
+                                                <div class="font-display text-sm font-bold text-slate-900 [word-break:break-word]">{{ $prize->name }}</div>
+                                                <div class="mt-2 flex justify-center">
+                                                    <x-rarity-badge :rarity="$prize->rarity" />
+                                                </div>
+                                                @if ($prize->description)
+                                                    <p class="mt-3 line-clamp-3 text-xs font-semibold leading-relaxed text-slate-500">{{ $prize->description }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
-                                <div class="font-display text-sm font-bold text-slate-900 [word-break:break-word]">{{ $prize->name }}</div>
-                                <x-rarity-badge :rarity="$prize->rarity" class="mt-2" />
                             </div>
-                        @endforeach
+
+                            @if ($prizes->count() > 1)
+                                <button type="button" class="prize-swiper-prev pressable-control absolute left-1 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border-[3px] border-slate-900 bg-white pixel-shadow transition hover:bg-slate-100 sm:-left-3" aria-label="Previous prize">
+                                    <i data-lucide="chevron-left" class="h-5 w-5 text-slate-900"></i>
+                                </button>
+                                <button type="button" class="prize-swiper-next pressable-control absolute right-1 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border-[3px] border-slate-900 bg-white pixel-shadow transition hover:bg-slate-100 sm:-right-3" aria-label="Next prize">
+                                    <i data-lucide="chevron-right" class="h-5 w-5 text-slate-900"></i>
+                                </button>
+                            @endif
+                        </div>
+
+                        @if ($prizes->count() > 1)
+                            <div class="prize-swiper-pagination mt-5 flex items-center justify-center gap-2"></div>
+                        @endif
                     </div>
                 </div>
             @endif
