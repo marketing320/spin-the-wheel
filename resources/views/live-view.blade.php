@@ -93,12 +93,14 @@
             </div>
 
             {{-- Wheel --}}
-            <div class="relative aspect-square w-[min(64vh,70vw)]">
-                <div id="live-wheel-pointer" class="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2 origin-top">
+            <div class="relative isolate aspect-square w-[min(64vh,70vw)]">
+                <div id="live-wheel-pointer" class="absolute left-1/2 top-[calc(7%_-_30px)] z-30 -translate-x-1/2 -translate-y-2 origin-top">
                     <div class="h-0 w-0 border-l-[22px] border-r-[22px] border-t-[38px] border-l-transparent border-r-transparent border-t-cherry-500 drop-shadow-lg"></div>
                 </div>
-                <div id="wheel-stage" class="h-full w-full"></div>
-                <div class="pointer-events-none absolute left-1/2 top-1/2 z-10 grid h-24 w-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-slate-900 bg-white pixel-shadow-lg">
+                <div id="wheel-stage" class="absolute inset-0 z-0 overflow-hidden rounded-full"></div>
+                <img src="{{ asset('img/ring_frame.png') }}" alt="" aria-hidden="true" draggable="false"
+                     class="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain pixelated">
+                <div class="pointer-events-none absolute left-1/2 top-1/2 z-20 grid h-24 w-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-slate-900 bg-white pixel-shadow-lg">
                     <img src="{{ asset('logo-black.png') }}" alt="Logo" class="h-20 w-20 object-contain">
                 </div>
             </div>

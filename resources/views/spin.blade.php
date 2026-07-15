@@ -42,15 +42,18 @@
         </div>
 
         {{-- Wheel stage — dominant, near full-width on mobile --}}
-        <div class="relative mx-auto aspect-square w-[min(96vw,34rem)]">
+        <div class="relative isolate mx-auto aspect-square w-[min(96vw,34rem)]">
             {{-- Pointer (points down into the wheel) --}}
-            <div id="wheel-pointer" class="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1 origin-top">
+            <div id="wheel-pointer" class="absolute left-1/2 top-[calc(7%_-_32px)] z-30 -translate-x-1/2 -translate-y-1 origin-top">
                 <div class="h-0 w-0 border-l-[20px] border-r-[20px] border-t-[36px] border-l-transparent border-r-transparent border-t-cherry-500 drop-shadow-[3px_3px_0_rgba(15,23,42,1)]"></div>
             </div>
-            {{-- Three.js / canvas mount --}}
-            <div id="wheel-stage" class="h-full w-full"></div>
+            {{-- The wheel extends beneath the decorative frame so no bezel is
+                 visible; the light ring stays fixed while the face rotates. --}}
+            <div id="wheel-stage" class="absolute inset-0 z-0 overflow-hidden rounded-full"></div>
+            <img src="{{ asset('img/ring_frame.png') }}" alt="" aria-hidden="true" draggable="false"
+                 class="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain pixelated">
             {{-- Center hub --}}
-            <div class="pointer-events-none absolute left-1/2 top-1/2 z-10 grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-slate-900 bg-white pixel-shadow">
+            <div class="pointer-events-none absolute left-1/2 top-1/2 z-20 grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-slate-900 bg-white pixel-shadow">
                 <img src="{{ asset('logo-black.png') }}" alt="Logo" class="h-15 w-15 object-contain">
             </div>
         </div>
@@ -70,6 +73,61 @@
                 Another player is spinning…
             @endif
         </p>
+    </div>
+
+    {{-- Location verification modal — shown immediately when the active
+         campaign requires geofencing and dismissed only after a server-side
+         geofence check passes. --}}
+    <div id="location-modal"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="location-modal-title"
+         aria-describedby="location-modal-message"
+         aria-hidden="{{ $geofenceEnabled ? 'false' : 'true' }}"
+         class="fixed inset-0 z-[70] {{ $geofenceEnabled ? 'flex' : 'hidden' }} items-center justify-center bg-slate-900/50 p-5 backdrop-blur-sm">
+        <div class="card w-full max-w-sm text-center" tabindex="-1">
+            <div class="relative mx-auto h-40 w-36" aria-hidden="true">
+                <div class="animate-location-pointer absolute inset-x-0 top-0 flex justify-center">
+                    <img src="{{ asset('img/loc_pointer.png') }}" alt="" class="pixelated h-32 w-auto object-contain">
+                </div>
+                <div class="animate-location-shadow absolute bottom-2 left-1/2 h-2 w-16 -translate-x-1/2 rounded-full bg-slate-900/20"></div>
+            </div>
+
+            <div id="location-modal-title" class="mt-2 font-display text-lg font-bold text-slate-900">Verifying your location</div>
+            <p id="location-modal-message" class="mt-3 text-sm text-slate-600">Please allow location access while we confirm that you’re at the event.</p>
+
+            <div class="mt-5 flex items-end justify-center gap-2" aria-hidden="true">
+                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-brand-500"></span>
+                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-brand-500"></span>
+                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-brand-500"></span>
+            </div>
+            <span class="sr-only" role="status" aria-live="polite">Checking your current location.</span>
+        </div>
+    </div>
+
+    {{-- Reusable runtime error modal. Expected eligibility verdicts continue
+         to use the status banner above the wheel. --}}
+    <div id="error-modal"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="error-modal-title"
+         aria-describedby="error-modal-message"
+         aria-hidden="true"
+         class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/50 p-5 backdrop-blur-sm">
+        <div class="card w-full max-w-sm text-center" tabindex="-1">
+            <span class="mx-auto grid h-14 w-14 place-items-center rounded-full border-[3px] border-slate-900 bg-cherry-50 text-cherry-600 pixel-shadow">
+                <i data-lucide="triangle-alert" class="h-7 w-7"></i>
+            </span>
+            <div id="error-modal-title" class="mt-5 font-display text-lg font-bold text-slate-900">Something went wrong</div>
+            <p id="error-modal-message" class="mt-3 text-sm leading-relaxed text-slate-600">Please try again.</p>
+            <div class="mt-6 grid grid-cols-2 gap-3">
+                <button id="error-modal-close" type="button" class="btn-ghost w-full !px-3">Close</button>
+                <button id="error-modal-retry" type="button" class="btn-primary w-full !px-3">
+                    <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                    Try Again
+                </button>
+            </div>
+        </div>
     </div>
 
     {{-- Result modal --}}

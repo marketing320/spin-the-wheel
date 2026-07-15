@@ -75,14 +75,6 @@ function drawWheelFace(segments, size) {
         ctx.restore();
     }
 
-    // Thick ink outer ring.
-    ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.lineWidth = border * 2;
-    ctx.strokeStyle = INK;
-    ctx.stroke();
-
     return canvas;
 }
 
@@ -127,13 +119,6 @@ class ThreeWheel {
             new THREE.MeshBasicMaterial({ map: this.texture, transparent: true })
         );
         this.wheelGroup.add(this.face);
-
-        // Flat ink ring bezel (static) — solid colour, no metal/gradient.
-        const bezel = new THREE.Mesh(
-            new THREE.TorusGeometry(2.04, 0.09, 8, 72),
-            new THREE.MeshBasicMaterial({ color: 0x0f172a })
-        );
-        this.scene.add(bezel);
 
         // Redraw once the pixel font has loaded so labels use it.
         if (document.fonts && document.fonts.ready) {

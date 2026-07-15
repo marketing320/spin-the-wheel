@@ -9,18 +9,64 @@ function readConfig() {
 }
 
 function getCoords(enabled) {
-    if (!enabled || !('geolocation' in navigator)) {
-        return Promise.resolve({ lat: null, lng: null });
+    if (!enabled) {
+        return Promise.resolve({ ok: true, coords: { lat: null, lng: null } });
+    }
+
+    if (!('geolocation' in navigator)) {
+        return Promise.resolve({
+            ok: false,
+            title: 'Location not supported',
+            message: 'This browser cannot share your location. Please try a current mobile browser.',
+        });
     }
 
     return new Promise((resolve) => {
         navigator.geolocation.getCurrentPosition(
-            (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
-            () => resolve({ lat: null, lng: null }),
+            (position) => resolve({
+                ok: true,
+                coords: { lat: position.coords.latitude, lng: position.coords.longitude },
+            }),
+            (error) => {
+                const failures = {
+                    1: {
+                        title: 'Location permission needed',
+                        message: 'Please allow location access in your browser settings, then try again.',
+                    },
+                    2: {
+                        title: 'Location unavailable',
+                        message: 'We could not determine your current location. Check your device location settings and try again.',
+                    },
+                    3: {
+                        title: 'Location check timed out',
+                        message: 'Getting your location took too long. Move somewhere with a clearer signal and try again.',
+                    },
+                };
+
+                resolve({
+                    ok: false,
+                    ...(failures[error?.code] || {
+                        title: 'Could not verify location',
+                        message: 'We could not access your current location. Please try again.',
+                    }),
+                });
+            },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
         );
     });
 }
+
+const EXPECTED_ELIGIBILITY_REASONS = new Set([
+    'blocked',
+    'not_verified',
+    'form_incomplete',
+    'campaign_closed',
+    'once_per_campaign',
+    'once_per_day',
+    'max_per_campaign',
+    'max_per_day',
+    'cooldown',
+]);
 
 export function initPlayerPage() {
     const config = readConfig();
@@ -38,6 +84,12 @@ export function initPlayerPage() {
     const queueModal = document.getElementById('queue-modal');
     const queueModalPosition = document.getElementById('queue-modal-position');
     const turnModal = document.getElementById('turn-modal');
+    const locationModal = document.getElementById('location-modal');
+    const errorModal = document.getElementById('error-modal');
+    const errorModalTitle = document.getElementById('error-modal-title');
+    const errorModalMessage = document.getElementById('error-modal-message');
+    const errorModalClose = document.getElementById('error-modal-close');
+    const errorModalRetry = document.getElementById('error-modal-retry');
     const csrf = config.csrf || document.querySelector('meta[name=csrf-token]')?.content;
 
     // Live prize display above the pointer — shows whatever is under the pointer.
@@ -63,6 +115,11 @@ export function initPlayerPage() {
     let mySpinId = null;
     let submitting = false;
     let spinning = false;
+    const locationRequired = Boolean(config.geofenceEnabled);
+    let locationVerified = !locationRequired;
+    let locationVerifying = false;
+    let verifiedCoords = { lat: null, lng: null };
+    let errorRetryAction = null;
     let eligibility = {
         eligible: Boolean(config.eligibility?.eligible),
         spin_in_progress: Boolean(config.spinInProgress),
@@ -79,8 +136,32 @@ export function initPlayerPage() {
         return 'You are first in the queue. Please wait for your turn…';
     }
 
-    const showModal = (node) => { node?.classList.remove('hidden'); node?.classList.add('flex'); };
-    const hideModal = (node) => { node?.classList.add('hidden'); node?.classList.remove('flex'); };
+    const showModal = (node) => {
+        node?.classList.remove('hidden');
+        node?.classList.add('flex');
+        node?.setAttribute('aria-hidden', 'false');
+    };
+    const hideModal = (node) => {
+        node?.classList.add('hidden');
+        node?.classList.remove('flex');
+        node?.setAttribute('aria-hidden', 'true');
+    };
+
+    function closeErrorModal() {
+        hideModal(errorModal);
+        errorRetryAction = null;
+    }
+
+    function showErrorModal({ title, message, retry = null }) {
+        hideModal(locationModal);
+        if (errorModalTitle) errorModalTitle.textContent = title || 'Something went wrong';
+        if (errorModalMessage) errorModalMessage.textContent = message || 'Please try again.';
+        errorRetryAction = retry;
+        errorModalRetry?.classList.toggle('hidden', !retry);
+        errorModalClose?.classList.toggle('col-span-2', !retry);
+        showModal(errorModal);
+        (retry ? errorModalRetry : errorModalClose)?.focus();
+    }
 
     // Whether the player has already tapped "Let's go!" on the turn modal for
     // their current turn — prevents it popping back open on every poll tick
@@ -123,9 +204,10 @@ export function initPlayerPage() {
 
         const queue = eligibility.queue || {};
         const ownSpinActive = Boolean(mySpinId && spinning);
-        const canJoin = eligibility.eligible && !queue.queued && !ownSpinActive && !submitting;
-        const canSpin = eligibility.eligible && queue.queued && eligibility.can_start && !ownSpinActive && !submitting;
-        const available = eligibility.eligible && !queue.queued && !eligibility.spin_in_progress && !ownSpinActive && !submitting;
+        const locationReady = !locationRequired || locationVerified;
+        const canJoin = eligibility.eligible && locationReady && !queue.queued && !ownSpinActive && !submitting;
+        const canSpin = eligibility.eligible && locationReady && queue.queued && eligibility.can_start && !ownSpinActive && !submitting;
+        const available = eligibility.eligible && locationReady && !queue.queued && !eligibility.spin_in_progress && !ownSpinActive && !submitting;
 
         button.disabled = !(canJoin || canSpin || available);
         button.querySelector('[data-label-idle]')?.classList.toggle('hidden', submitting || ownSpinActive);
@@ -140,7 +222,9 @@ export function initPlayerPage() {
             setHint('');
         } else {
             if (banner) banner.innerHTML = '';
-            if (queue.queued) {
+            if (locationRequired && !locationVerified && !locationVerifying) {
+                setHint('Location verification is required before you can spin.');
+            } else if (queue.queued) {
                 setHint(canSpin ? 'It is your turn. Tap the button to spin!' : queueMessage(queue));
             } else if (eligibility.spin_in_progress && !spinning) {
                 setHint('Another player is spinning…');
@@ -165,6 +249,104 @@ export function initPlayerPage() {
         });
 
         return { status: response.status, data: await response.json().catch(() => ({})) };
+    }
+
+    function applyExpectedEligibilityFailure(data) {
+        if (!data || !EXPECTED_ELIGIBILITY_REASONS.has(data.reason)) return false;
+
+        eligibility = {
+            ...eligibility,
+            eligible: false,
+            reason: data.reason,
+            message: data.message || 'You are not eligible to spin right now.',
+            next_available_at: data.next_available_at || null,
+        };
+        renderState();
+        return true;
+    }
+
+    function locationFailureCopy(data) {
+        if (data?.reason === 'outside_radius') {
+            return {
+                title: 'Outside the event area',
+                message: data.message || 'You must be at the event location to spin the wheel.',
+            };
+        }
+
+        if (data?.reason === 'location_unavailable') {
+            return {
+                title: 'Could not verify location',
+                message: data.message || 'Please allow location access and try again.',
+            };
+        }
+
+        return {
+            title: 'Location verification failed',
+            message: data?.message || 'We could not confirm your current location. Please try again.',
+        };
+    }
+
+    async function verifyLocation() {
+        if (!locationRequired) {
+            locationVerified = true;
+            hideModal(locationModal);
+            renderState();
+            return true;
+        }
+
+        if (locationVerifying) return false;
+
+        locationVerifying = true;
+        locationVerified = false;
+        closeErrorModal();
+        showModal(locationModal);
+        locationModal?.querySelector('[tabindex="-1"]')?.focus();
+        renderState();
+
+        const result = await getCoords(true);
+        if (!result.ok) {
+            locationVerifying = false;
+            verifiedCoords = { lat: null, lng: null };
+            renderState();
+            showErrorModal({
+                title: result.title,
+                message: result.message,
+                retry: verifyLocation,
+            });
+            return false;
+        }
+
+        let response;
+        try {
+            response = await post(config.routes.geofence, result.coords);
+        } catch (_) {
+            locationVerifying = false;
+            verifiedCoords = { lat: null, lng: null };
+            renderState();
+            showErrorModal({
+                title: 'Connection problem',
+                message: 'We could not verify your location with the server. Check your connection and try again.',
+                retry: verifyLocation,
+            });
+            return false;
+        }
+
+        locationVerifying = false;
+        if (response.status === 200 && response.data?.passed) {
+            verifiedCoords = result.coords;
+            locationVerified = true;
+            hideModal(locationModal);
+            renderState();
+            return true;
+        }
+
+        verifiedCoords = { lat: null, lng: null };
+        renderState();
+        showErrorModal({
+            ...locationFailureCopy(response.data),
+            retry: verifyLocation,
+        });
+        return false;
     }
 
     async function refreshEligibility() {
@@ -261,14 +443,33 @@ export function initPlayerPage() {
     async function onSpinClick() {
         if (submitting || (mySpinId && spinning)) return;
 
+        if (locationRequired && !locationVerified) {
+            await verifyLocation();
+            return;
+        }
+
         submitting = true;
         const queue = eligibility.queue || {};
         const shouldJoin = !queue.queued && (eligibility.spin_in_progress || Number(queue.count || 0) > 0);
-        setHint(shouldJoin ? 'Please wait…' : 'Checking your location…');
+        setHint(shouldJoin ? 'Please wait…' : 'Preparing your spin…');
         renderState();
 
         if (shouldJoin) {
-            const { status, data } = await post(config.routes.queue);
+            let response;
+            try {
+                response = await post(config.routes.queue);
+            } catch (_) {
+                submitting = false;
+                renderState();
+                showErrorModal({
+                    title: 'Connection problem',
+                    message: 'We could not join the spin queue. Check your connection and try again.',
+                    retry: onSpinClick,
+                });
+                return;
+            }
+
+            const { status, data } = response;
             submitting = false;
             if (status === 202 && data.queued) {
                 eligibility.queue = data.queue;
@@ -277,16 +478,42 @@ export function initPlayerPage() {
                 renderState();
                 return;
             }
+
+            if (applyExpectedEligibilityFailure(data)) return;
+
+            if (status === 409 && data.reason === 'spin_available') {
+                await refreshEligibility();
+                return;
+            }
+
             setHint(data.message || 'Unable to spin right now.');
-            await refreshEligibility();
+            renderState();
+            showErrorModal({
+                title: 'Could not join the queue',
+                message: data.message || 'The spin queue is unavailable right now. Please try again.',
+                retry: onSpinClick,
+            });
             return;
         }
 
         // This must run inside the final tap gesture for mobile audio.
         await controller.audio.unlock();
 
-        const coords = await getCoords(config.geofenceEnabled);
-        const { status, data } = await post(config.routes.start, coords);
+        let response;
+        try {
+            response = await post(config.routes.start, verifiedCoords);
+        } catch (_) {
+            submitting = false;
+            renderState();
+            showErrorModal({
+                title: 'Connection problem',
+                message: 'We could not start the wheel. Check your connection and try again.',
+                retry: onSpinClick,
+            });
+            return;
+        }
+
+        const { status, data } = response;
         submitting = false;
 
         if (status === 200 && data.ok && data.spin) {
@@ -315,8 +542,36 @@ export function initPlayerPage() {
             return;
         }
 
+        if (applyExpectedEligibilityFailure(data)) return;
+
+        if (data.reason === 'outside_radius' || data.reason === 'location_unavailable' || data.reason === 'geofence_blocked') {
+            locationVerified = false;
+            verifiedCoords = { lat: null, lng: null };
+            renderState();
+            showErrorModal({
+                ...locationFailureCopy(data),
+                retry: verifyLocation,
+            });
+            return;
+        }
+
+        if (data.reason === 'no_prizes') {
+            renderState();
+            showErrorModal({
+                title: 'No prizes available',
+                message: data.message || 'No prizes are currently available. Please try again later.',
+                retry: onSpinClick,
+            });
+            return;
+        }
+
         setHint(data.message || 'Unable to spin right now.');
-        await refreshEligibility();
+        renderState();
+        showErrorModal({
+            title: 'Could not start the wheel',
+            message: data.message || 'An unexpected error stopped the spin from starting. Please try again.',
+            retry: onSpinClick,
+        });
     }
 
     button?.addEventListener('click', onSpinClick);
@@ -324,6 +579,24 @@ export function initPlayerPage() {
     document.getElementById('turn-modal-dismiss')?.addEventListener('click', () => {
         turnAcknowledged = true;
         hideModal(turnModal);
+    });
+
+    errorModalClose?.addEventListener('click', () => {
+        closeErrorModal();
+        renderState();
+    });
+
+    errorModalRetry?.addEventListener('click', async () => {
+        const retry = errorRetryAction;
+        closeErrorModal();
+        if (retry) await retry();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && errorModal && !errorModal.classList.contains('hidden')) {
+            closeErrorModal();
+            renderState();
+        }
     });
 
     subscribeToSpins({
@@ -383,6 +656,11 @@ export function initPlayerPage() {
 
     renderState();
     showSegment(0); // resting prize under the pointer
+    if (locationRequired) {
+        verifyLocation();
+    } else {
+        hideModal(locationModal);
+    }
     poll();
     setInterval(poll, 3000);
 }

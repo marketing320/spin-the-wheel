@@ -15,6 +15,7 @@
         ['admin.front-view', 'Front View Banner', 'image', true],
         ['admin.spins', 'Spin History', 'history', false],
         ['admin.players', 'Players', 'users', true],
+        ['admin.users', 'Users', 'user-cog', true],
         ['admin.settings', 'Settings', 'settings', true],
     ];
     $isFullAdmin = (bool) auth('web')->user()?->isAdmin();
@@ -64,6 +65,7 @@
             </div>
             <div class="flex items-center gap-3 text-sm text-slate-500">
                 <a href="{{ route('home') }}" target="_blank" class="inline-flex items-center gap-1 hover:text-slate-900">View site <i data-lucide="external-link" class="h-3.5 w-3.5"></i></a>
+                <a href="{{ route('admin.account.password') }}" wire:navigate class="inline-flex items-center gap-1 hover:text-slate-900"><i data-lucide="key-round" class="h-3.5 w-3.5"></i> Password</a>
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
                     <button class="btn-ghost !px-3 !py-1.5 text-xs">Sign out</button>
