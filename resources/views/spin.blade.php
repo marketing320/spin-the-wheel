@@ -42,9 +42,9 @@
         </div>
 
         {{-- Wheel stage — dominant, near full-width on mobile --}}
-        <div class="relative isolate mx-auto aspect-square w-[min(96vw,34rem)]">
+        <div class="relative isolate mx-auto mt-6 aspect-square w-[min(96vw,34rem)]">
             {{-- Pointer (points down into the wheel) --}}
-            <div id="wheel-pointer" class="absolute left-1/2 top-[calc(7%_-_32px)] z-30 -translate-x-1/2 -translate-y-1 origin-top">
+            <div id="wheel-pointer" class="absolute left-1/2 top-[-36.3px] z-30 -translate-x-1/2 origin-top">
                 <div class="h-0 w-0 border-l-[20px] border-r-[20px] border-t-[36px] border-l-transparent border-r-transparent border-t-cherry-500 drop-shadow-[3px_3px_0_rgba(15,23,42,1)]"></div>
             </div>
             {{-- The wheel extends beneath the decorative frame so no bezel is

@@ -93,8 +93,8 @@
             </div>
 
             {{-- Wheel --}}
-            <div class="relative isolate aspect-square w-[min(64vh,70vw)]">
-                <div id="live-wheel-pointer" class="absolute left-1/2 top-[calc(7%_-_30px)] z-30 -translate-x-1/2 -translate-y-2 origin-top">
+            <div class="relative isolate mt-4 aspect-square w-[min(64vh,70vw)]">
+                <div id="live-wheel-pointer" class="absolute left-1/2 top-[-38.3px] z-30 -translate-x-1/2 origin-top">
                     <div class="h-0 w-0 border-l-[22px] border-r-[22px] border-t-[38px] border-l-transparent border-r-transparent border-t-cherry-500 drop-shadow-lg"></div>
                 </div>
                 <div id="wheel-stage" class="absolute inset-0 z-0 overflow-hidden rounded-full"></div>

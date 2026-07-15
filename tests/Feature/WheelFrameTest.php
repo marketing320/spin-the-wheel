@@ -58,12 +58,15 @@ class WheelFrameTest extends TestCase
     {
         $this->assertStringContainsString(asset('img/ring_frame.png'), $html);
         $this->assertStringContainsString('absolute inset-0 z-0 overflow-hidden rounded-full', $html);
-        $this->assertStringContainsString('top-[calc(7%_-_', $html);
         $this->assertStringContainsString('z-30 -translate-x-1/2', $html);
         $this->assertStringContainsString('absolute inset-0 z-10 h-full w-full', $html);
         $this->assertSame(1, substr_count($html, asset('img/ring_frame.png')));
 
         preg_match('/id="wheel-stage" class="([^"]+)"/', $html, $stage);
         $this->assertStringNotContainsString('bg-white', $stage[1] ?? '');
+
+        preg_match('/id="(?:wheel-pointer|live-wheel-pointer)" class="([^"]+)"/', $html, $pointer);
+        $this->assertMatchesRegularExpression('/top-\[-(?:28|36|38)\.3px\]/', $pointer[1] ?? '');
+        $this->assertStringNotContainsString('translate-y', $pointer[1] ?? '');
     }
 }

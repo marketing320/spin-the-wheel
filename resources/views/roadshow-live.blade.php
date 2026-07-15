@@ -85,8 +85,8 @@
 
         {{-- Wheel — width-driven (vertical space is abundant in portrait mode,
              width is the binding constraint on both a single and double panel). --}}
-        <div class="relative isolate mt-5 aspect-square w-[min(88vw,720px)] shrink-0">
-            <div id="live-wheel-pointer" class="absolute left-1/2 top-[calc(7%_-_20px)] z-30 -translate-x-1/2 -translate-y-2 origin-top">
+        <div class="relative isolate mt-8 aspect-square w-[min(88vw,720px)] shrink-0">
+            <div id="live-wheel-pointer" class="absolute left-1/2 top-[-28.3px] z-30 -translate-x-1/2 origin-top">
                 <div class="h-0 w-0 border-l-[16px] border-r-[16px] border-t-[28px] border-l-transparent border-r-transparent border-t-cherry-500 drop-shadow-lg"></div>
             </div>
             <div id="wheel-stage" class="absolute inset-0 z-0 overflow-hidden rounded-full"></div>
