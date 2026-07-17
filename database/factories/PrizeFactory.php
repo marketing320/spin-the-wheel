@@ -24,6 +24,7 @@ class PrizeFactory extends Factory
             'inventory_quantity' => null,
             'confetti_level' => 'light',
             'redemption_message' => 'Redeem at the counter.',
+            'staff_redemption_reminder' => null,
             'is_active' => true,
             'sort_order' => 0,
         ];

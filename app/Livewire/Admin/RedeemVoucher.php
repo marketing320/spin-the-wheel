@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Exceptions\VoucherException;
+use App\Models\Voucher;
 use App\Services\VoucherService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -44,6 +45,9 @@ class RedeemVoucher extends Component
         }
 
         $masked = $vouchers->maskedCustomerInfo($voucher->player, $voucher->campaign);
+        $reminder = filled($voucher->staff_redemption_reminder)
+            ? trim($voucher->staff_redemption_reminder)
+            : null;
 
         $this->pending = [
             'voucher_id' => $voucher->id,
@@ -57,7 +61,16 @@ class RedeemVoucher extends Component
             'expires_at_human' => $voucher->expires_at->format('M j, Y g:i A'),
             'redeemable' => $voucher->isRedeemable(),
             'status' => $voucher->isRedeemed() ? 'redeemed' : ($voucher->isExpired() ? 'expired' : 'pending'),
+            'staff_redemption_reminder' => $reminder,
         ];
+
+        if ($reminder) {
+            $this->dispatch(
+                'voucher-reminder',
+                title: 'Staff redemption reminder',
+                message: $reminder,
+            );
+        }
     }
 
     public function confirmRedeem(VoucherService $vouchers): void
@@ -66,7 +79,7 @@ class RedeemVoucher extends Component
             return;
         }
 
-        $voucher = \App\Models\Voucher::find($this->pending['voucher_id']);
+        $voucher = Voucher::find($this->pending['voucher_id']);
 
         try {
             $vouchers->redeem($voucher, Auth::guard('web')->user());

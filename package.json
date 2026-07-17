@@ -20,6 +20,7 @@
         "canvas-confetti": "^1.9.4",
         "html5-qrcode": "^2.3.8",
         "matter-js": "^0.20.0",
+        "sweetalert2": "^11.26.25",
         "swiper": "^11.2.10",
         "three": "^0.185.1"
     }

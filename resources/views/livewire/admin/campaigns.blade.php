@@ -43,7 +43,11 @@
                                         <button wire:click="activate({{ $c->id }})" class="text-xs font-semibold text-emerald-800 hover:text-emerald-900">Activate</button>
                                     @endunless
                                     <button wire:click="edit({{ $c->id }})" class="text-xs font-semibold text-brand-700 hover:text-brand-600">Edit</button>
-                                    <button wire:click="delete({{ $c->id }})" wire:confirm="Delete this campaign and all its data?" class="text-xs font-semibold text-rose-700 hover:text-rose-800">Delete</button>
+                                    <button wire:click="delete({{ $c->id }})"
+                                            data-swal-confirm-title="Delete campaign?"
+                                            data-swal-confirm="Delete this campaign and all its data? This cannot be undone."
+                                            data-swal-confirm-button="Delete"
+                                            class="text-xs font-semibold text-rose-700 hover:text-rose-800">Delete</button>
                                 </div>
                             </td>
                         </tr>

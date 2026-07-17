@@ -1,4 +1,5 @@
 import './echo';
+import './sweet-alerts';
 import { fireConfetti } from './spin/confetti-controller';
 
 /**

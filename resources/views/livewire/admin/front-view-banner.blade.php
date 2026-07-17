@@ -48,7 +48,11 @@
                             <button type="button" wire:click="moveDown({{ $index }})" @disabled($index === count($images) - 1) class="text-slate-500 hover:text-slate-900 disabled:opacity-30" aria-label="Move down">
                                 <i data-lucide="chevron-down" class="h-4 w-4"></i>
                             </button>
-                            <button type="button" wire:click="removeImage({{ $index }})" wire:confirm="Remove this image?" class="ml-2 text-xs font-semibold text-rose-700 hover:text-rose-800">Remove</button>
+                            <button type="button" wire:click="removeImage({{ $index }})"
+                                    data-swal-confirm-title="Remove image?"
+                                    data-swal-confirm="Remove this image from the banner?"
+                                    data-swal-confirm-button="Remove"
+                                    class="ml-2 text-xs font-semibold text-rose-700 hover:text-rose-800">Remove</button>
                         </div>
                     </div>
                 @endforeach

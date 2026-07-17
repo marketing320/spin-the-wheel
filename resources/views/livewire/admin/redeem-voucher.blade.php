@@ -94,7 +94,12 @@
             <div class="mt-5 flex justify-end gap-2">
                 <button type="button" wire:click="cancel" class="btn-ghost">Cancel</button>
                 @if ($pending['redeemable'])
-                    <button type="button" wire:click="confirmRedeem" wire:confirm="Redeem this voucher now? This cannot be undone." class="btn-primary">
+                    <button type="button" wire:click="confirmRedeem"
+                            data-swal-confirm-title="Redeem voucher?"
+                            data-swal-confirm="Redeem this voucher now? This cannot be undone."
+                            data-swal-confirm-button="Redeem"
+                            data-swal-confirm-tone="primary"
+                            class="btn-primary">
                         <i data-lucide="check" class="h-4 w-4"></i> Confirm Redeem
                     </button>
                 @endif

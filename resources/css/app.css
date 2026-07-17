@@ -287,3 +287,49 @@
         opacity: .55;
     }
 }
+
+/* SweetAlert2 uses the same bold arcade card and controls as the rest of the
+   admin UI. Its container sits above Livewire modals and global toasts. */
+.swal2-container {
+    z-index: 100 !important;
+}
+
+.swal2-popup.arcade-swal {
+    width: min(30rem, calc(100vw - 2rem));
+    border: 3px solid var(--color-ink);
+    border-radius: 1rem;
+    background: #ffffff;
+    box-shadow: 6px 6px 0 0 var(--color-ink);
+    padding: 1.5rem;
+    font-family: var(--font-sans);
+}
+
+.arcade-swal .swal2-title {
+    color: #0f172a;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.arcade-swal .swal2-html-container {
+    color: #475569;
+    font-size: .9rem;
+    line-height: 1.6;
+}
+
+.arcade-swal .swal2-actions {
+    gap: .75rem;
+    margin-top: 1.5rem;
+}
+
+.arcade-swal .swal2-actions button {
+    margin: 0;
+}
+
+.arcade-swal .swal-confirm-danger {
+    background: var(--color-cherry-500);
+}
+
+.arcade-swal .swal-confirm-danger:hover {
+    background: var(--color-cherry-600);
+}

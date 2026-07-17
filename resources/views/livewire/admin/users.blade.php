@@ -46,7 +46,11 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <button wire:click="edit({{ $user->id }})" class="text-xs font-semibold text-brand-700 hover:text-brand-600">Edit</button>
                                     @if ($user->id !== $currentUserId)
-                                        <button wire:click="delete({{ $user->id }})" wire:confirm="Delete {{ $user->email }}? This cannot be undone." class="text-xs font-semibold text-rose-700 hover:text-rose-800">Delete</button>
+                                        <button wire:click="delete({{ $user->id }})"
+                                                data-swal-confirm-title="Delete user?"
+                                                data-swal-confirm="Delete {{ $user->email }}? This cannot be undone."
+                                                data-swal-confirm-button="Delete"
+                                                class="text-xs font-semibold text-rose-700 hover:text-rose-800">Delete</button>
                                     @endif
                                 </div>
                             </td>

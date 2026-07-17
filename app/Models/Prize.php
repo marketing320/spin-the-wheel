@@ -12,10 +12,13 @@ class Prize extends Model
     use HasFactory;
 
     public const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+
     public const CONFETTI_LEVELS = ['light', 'medium', 'strong', 'heavy', 'max'];
 
     public const TYPE_PHYSICAL = 'physical';
+
     public const TYPE_VOUCHER = 'voucher';
+
     public const TYPES = [self::TYPE_PHYSICAL, self::TYPE_VOUCHER];
 
     protected $fillable = [
@@ -33,6 +36,7 @@ class Prize extends Model
         'inventory_enabled',
         'confetti_level',
         'redemption_message',
+        'staff_redemption_reminder',
         'is_active',
         'sort_order',
         'segment_count',

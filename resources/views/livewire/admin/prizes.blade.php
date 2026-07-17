@@ -23,7 +23,10 @@
                     @endif
                 </div>
                 <button type="button" wire:click="autoDistributeByRarity"
-                        wire:confirm="Recalculate odds for every active prize based on rarity (Common gets the biggest share, Legendary the smallest)? This overwrites current values."
+                        data-swal-confirm-title="Recalculate prize odds?"
+                        data-swal-confirm="Recalculate odds for every active prize based on rarity (Common gets the biggest share, Legendary the smallest)? This overwrites current values."
+                        data-swal-confirm-button="Recalculate"
+                        data-swal-confirm-tone="primary"
                         class="btn-ghost !py-1.5 text-xs">
                     <i data-lucide="shuffle" class="h-3.5 w-3.5"></i> Auto-distribute by rarity
                 </button>
@@ -144,7 +147,11 @@
                                     <div class="flex items-center justify-end gap-2">
                                         <button wire:click="edit({{ $prize->id }})" class="text-xs font-semibold text-brand-700 hover:text-brand-600">Edit</button>
                                         <button wire:click="duplicate({{ $prize->id }})" class="text-xs font-semibold text-slate-600 hover:text-slate-900">Duplicate</button>
-                                        <button wire:click="delete({{ $prize->id }})" wire:confirm="Delete this prize?" class="text-xs font-semibold text-rose-700 hover:text-rose-800">Delete</button>
+                                        <button wire:click="delete({{ $prize->id }})"
+                                                data-swal-confirm-title="Delete prize?"
+                                                data-swal-confirm="Delete this prize? This cannot be undone."
+                                                data-swal-confirm-button="Delete"
+                                                class="text-xs font-semibold text-rose-700 hover:text-rose-800">Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -208,6 +215,12 @@
                         <input type="number" min="1" max="8760" wire:model="voucher_expiry_hours" class="field" placeholder="Uses global default">
                         <p class="mt-1 text-xs text-slate-500">Leave blank to use the global default (Settings → Redemption).</p>
                         @error('voucher_expiry_hours') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="label">Staff redemption reminder <span class="text-slate-500">(optional)</span></label>
+                        <textarea wire:model="staff_redemption_reminder" rows="3" maxlength="1000" class="field" placeholder="e.g. Minimum spend RM50. Not valid with other promotions."></textarea>
+                        <p class="mt-1 text-xs text-slate-500">Shown as a warning to Sales / Staff and Admin users when they look up this voucher.</p>
+                        @error('staff_redemption_reminder') <p class="mt-1 text-sm text-rose-700">{{ $message }}</p> @enderror
                     </div>
                 @endif
             </div>

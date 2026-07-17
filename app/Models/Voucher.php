@@ -13,7 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Voucher extends Model
 {
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_REDEEMED = 'redeemed';
+
     public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
@@ -22,6 +24,7 @@ class Voucher extends Model
         'player_id',
         'prize_id',
         'code',
+        'staff_redemption_reminder',
         'status',
         'expires_at',
         'redeemed_at',

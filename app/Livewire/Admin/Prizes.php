@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\Campaign;
 use App\Models\Prize;
+use App\Models\Voucher;
 use App\Services\PrizeSelectionService;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -19,6 +20,7 @@ class Prizes extends Component
     public const SORTABLE_FIELDS = ['name', 'rarity', 'type', 'odds', 'stock', 'is_active'];
 
     public string $sortField = 'sort_order';
+
     public string $sortDirection = 'asc';
 
     public bool $showModal = false;
@@ -30,19 +32,35 @@ class Prizes extends Component
 
     // Form state
     public string $name = '';
+
     public ?string $description = null;
+
     public string $rarity = 'common';
+
     public string $type = 'physical';
+
     public $voucher_expiry_hours = null;
+
     public ?string $color = '#6366f1';
+
     public $win_percentage = null;
+
     public $weight = null;
+
     public bool $inventory_enabled = false;
+
     public $inventory_quantity = null;
+
     public string $confetti_level = 'light';
+
     public ?string $redemption_message = null;
+
+    public ?string $staff_redemption_reminder = null;
+
     public bool $is_active = true;
+
     public int $sort_order = 0;
+
     public int $segment_count = 1;
 
     /** Maximum wheel slots a single prize may occupy. */
@@ -75,6 +93,7 @@ class Prizes extends Component
             'inventory_quantity' => 'nullable|integer|min:0',
             'confetti_level' => ['required', Rule::in(Prize::CONFETTI_LEVELS)],
             'redemption_message' => 'nullable|string',
+            'staff_redemption_reminder' => 'nullable|string|max:1000',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
             'segment_count' => 'required|integer|min:1|max:'.self::MAX_SEGMENT_COUNT,
@@ -86,7 +105,7 @@ class Prizes extends Component
     {
         $this->reset([
             'editingId', 'name', 'description', 'win_percentage', 'weight',
-            'inventory_quantity', 'redemption_message', 'image', 'existingImagePath',
+            'inventory_quantity', 'redemption_message', 'staff_redemption_reminder', 'image', 'existingImagePath',
             'voucher_expiry_hours',
         ]);
         $this->rarity = 'common';
@@ -117,6 +136,7 @@ class Prizes extends Component
         $this->inventory_quantity = $p->inventory_quantity;
         $this->confetti_level = $p->confetti_level;
         $this->redemption_message = $p->redemption_message;
+        $this->staff_redemption_reminder = $p->staff_redemption_reminder;
         $this->is_active = $p->is_active;
         $this->segment_count = $p->segment_count;
         $this->sort_order = $p->sort_order;
@@ -149,6 +169,14 @@ class Prizes extends Component
 
         $data = $this->validate();
 
+        $data['staff_redemption_reminder'] = filled($data['staff_redemption_reminder'])
+            ? trim($data['staff_redemption_reminder'])
+            : null;
+
+        if ($data['type'] !== Prize::TYPE_VOUCHER) {
+            $data['staff_redemption_reminder'] = null;
+        }
+
         // Image is stored separately; do not pass the upload object to the model.
         unset($data['image']);
 
@@ -158,7 +186,18 @@ class Prizes extends Component
 
         $data['campaign_id'] = $campaign->id;
 
-        Prize::updateOrCreate(['id' => $this->editingId], $data);
+        $prize = Prize::updateOrCreate(['id' => $this->editingId], $data);
+
+        // Vouchers issued before this feature have no snapshot yet. Give
+        // those still-pending legacy vouchers the first configured reminder,
+        // while preserving non-null snapshots on vouchers issued with terms.
+        if ($prize->isVoucher() && filled($prize->staff_redemption_reminder)) {
+            Voucher::query()
+                ->where('prize_id', $prize->id)
+                ->where('status', Voucher::STATUS_PENDING)
+                ->whereNull('staff_redemption_reminder')
+                ->update(['staff_redemption_reminder' => $prize->staff_redemption_reminder]);
+        }
 
         $this->reset('image');
         $this->showModal = false;

@@ -46,6 +46,7 @@ class VoucherService
             'player_id' => $result->player_id,
             'prize_id' => $prize->id,
             'code' => $this->generateUniqueCode(),
+            'staff_redemption_reminder' => $prize->staff_redemption_reminder,
             'status' => Voucher::STATUS_PENDING,
             'expires_at' => now()->addHours(max(1, $hours)),
         ]);

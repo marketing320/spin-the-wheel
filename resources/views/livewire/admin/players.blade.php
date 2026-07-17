@@ -99,7 +99,10 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <button wire:click="view({{ $player->id }})" class="text-xs font-semibold text-brand-700 hover:text-brand-600">View</button>
                                     <button wire:click="toggleBlock({{ $player->id }})"
-                                            wire:confirm="{{ $player->isBlocked() ? 'Unblock this player?' : 'Block this player from spinning?' }}"
+                                            data-swal-confirm-title="{{ $player->isBlocked() ? 'Unblock player?' : 'Block player?' }}"
+                                            data-swal-confirm="{{ $player->isBlocked() ? 'Allow this player to spin again?' : 'Block this player from spinning?' }}"
+                                            data-swal-confirm-button="{{ $player->isBlocked() ? 'Unblock' : 'Block' }}"
+                                            data-swal-confirm-tone="{{ $player->isBlocked() ? 'primary' : 'danger' }}"
                                             class="text-xs font-semibold {{ $player->isBlocked() ? 'text-emerald-800 hover:text-emerald-900' : 'text-rose-700 hover:text-rose-800' }}">
                                         {{ $player->isBlocked() ? 'Unblock' : 'Block' }}
                                     </button>

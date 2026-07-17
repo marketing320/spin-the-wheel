@@ -61,7 +61,11 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-end gap-2">
                                         <button wire:click="edit({{ $rule->id }})" class="text-xs font-semibold text-brand-700 hover:text-brand-700">Edit</button>
-                                        <button wire:click="delete({{ $rule->id }})" wire:confirm="Delete this play rule?" class="text-xs font-semibold text-rose-700 hover:text-rose-700">Delete</button>
+                                        <button wire:click="delete({{ $rule->id }})"
+                                                data-swal-confirm-title="Delete play rule?"
+                                                data-swal-confirm="Delete this play rule? This cannot be undone."
+                                                data-swal-confirm-button="Delete"
+                                                class="text-xs font-semibold text-rose-700 hover:text-rose-700">Delete</button>
                                     </div>
                                 </td>
                             </tr>
