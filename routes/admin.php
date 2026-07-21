@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\Admin\PlayerExportController;
 use App\Http\Controllers\Admin\SpinExportController;
+use App\Http\Controllers\Admin\VoucherExportController;
 use App\Livewire\Admin\Campaigns;
 use App\Livewire\Admin\ChangePassword;
 use App\Livewire\Admin\Dashboard;
@@ -18,6 +19,7 @@ use App\Livewire\Admin\RedeemVoucher;
 use App\Livewire\Admin\Settings;
 use App\Livewire\Admin\Spins;
 use App\Livewire\Admin\Users;
+use App\Livewire\Admin\Vouchers;
 use App\Livewire\Admin\WheelDesign;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +35,10 @@ Route::prefix('admin')->group(function () {
         Route::get('/spins', Spins::class)->name('admin.spins');
         Route::get('/spins/export', [SpinExportController::class, 'export'])->name('admin.spins.export');
         Route::get('/redeem', RedeemVoucher::class)->name('admin.redeem');
+
+        // Voucher list + redemption history. Read-only + privacy-masked for
+        // staff; the rotate tools inside are gated to admins in the component.
+        Route::get('/vouchers', Vouchers::class)->name('admin.vouchers');
 
         // Self-service: any signed-in back-office user may change their own password.
         Route::get('/account/password', ChangePassword::class)->name('admin.account.password');
@@ -50,6 +56,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/front-view', FrontViewBanner::class)->name('admin.front-view');
         Route::get('/players', Players::class)->name('admin.players');
         Route::get('/players/export', [PlayerExportController::class, 'export'])->name('admin.players.export');
+        Route::get('/vouchers/export', [VoucherExportController::class, 'export'])->name('admin.vouchers.export');
         Route::get('/settings', Settings::class)->name('admin.settings');
     });
 

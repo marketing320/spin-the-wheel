@@ -31,7 +31,9 @@ class Prize extends Model
         'voucher_expiry_hours',
         'color',
         'win_percentage',
+        'base_win_percentage',
         'weight',
+        'base_weight',
         'inventory_quantity',
         'inventory_enabled',
         'confetti_level',
@@ -44,7 +46,9 @@ class Prize extends Model
 
     protected $casts = [
         'win_percentage' => 'decimal:4',
+        'base_win_percentage' => 'decimal:4',
         'weight' => 'integer',
+        'base_weight' => 'integer',
         'inventory_quantity' => 'integer',
         'inventory_enabled' => 'boolean',
         'voucher_expiry_hours' => 'integer',
@@ -61,6 +65,11 @@ class Prize extends Model
      * reserve stock during a live spin issues a raw single-column SQL update
      * and never fires this, so PrizeSelectionService::selectAndReserve()
      * handles that path explicitly.
+     *
+     * While the prize is in stock we also snapshot its configured odds into the
+     * base_* columns. Those survive the sell-out zeroing above, so an
+     * unredeemed voucher rotated back onto the wheel can restore the prize's
+     * original win_percentage / weight (see VoucherRotationService).
      */
     protected static function booted(): void
     {
@@ -68,7 +77,12 @@ class Prize extends Model
             if ($prize->isOutOfStock()) {
                 $prize->win_percentage = 0;
                 $prize->weight = 0;
+
+                return;
             }
+
+            $prize->base_win_percentage = $prize->win_percentage;
+            $prize->base_weight = $prize->weight;
         });
     }
 

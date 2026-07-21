@@ -106,7 +106,7 @@ class VoucherReminderTest extends TestCase
             $sweetAlertConfirmations += preg_match_all('/\bdata-swal-confirm=/', $contents);
         }
 
-        $this->assertSame(9, $sweetAlertConfirmations);
+        $this->assertSame(11, $sweetAlertConfirmations);
     }
 
     /** @return array{Prize, Voucher} */

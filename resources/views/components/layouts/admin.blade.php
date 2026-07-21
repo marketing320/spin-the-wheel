@@ -5,6 +5,7 @@
     $nav = [
         ['admin.dashboard', 'Dashboard', 'layout-dashboard', false],
         ['admin.redeem', 'Redeem Voucher', 'scan-line', false],
+        ['admin.vouchers', 'Vouchers', 'ticket', false],
         ['admin.campaigns', 'Campaigns', 'target', true],
         ['admin.prizes', 'Prizes', 'gift', true],
         ['admin.wheel', 'Wheel Design', 'ferris-wheel', true],

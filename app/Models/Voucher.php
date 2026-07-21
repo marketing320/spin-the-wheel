@@ -29,11 +29,13 @@ class Voucher extends Model
         'expires_at',
         'redeemed_at',
         'redeemed_by',
+        'rotated_at',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'redeemed_at' => 'datetime',
+        'rotated_at' => 'datetime',
     ];
 
     public function spinResult(): BelongsTo
@@ -79,5 +81,47 @@ class Voucher extends Model
     public function isRedeemable(): bool
     {
         return $this->status === self::STATUS_PENDING && ! $this->expires_at->isPast();
+    }
+
+    /**
+     * Whether this voucher's prize has already been rotated back onto the wheel.
+     */
+    public function isRotated(): bool
+    {
+        return $this->rotated_at !== null;
+    }
+
+    /**
+     * Whether this is an expired voucher that was never redeemed and has not
+     * yet been rotated — i.e. a candidate to return to the wheel.
+     */
+    public function isUnusedExpired(): bool
+    {
+        return $this->status !== self::STATUS_REDEEMED
+            && $this->redeemed_at === null
+            && $this->rotated_at === null
+            && $this->expires_at !== null
+            && $this->expires_at->isPast();
+    }
+
+    /**
+     * Coarse lifecycle label for admin display, collapsing the lazy-expiry and
+     * rotation nuances into a single value: redeemed | rotated | expired | pending.
+     */
+    public function displayStatus(): string
+    {
+        if ($this->isRedeemed()) {
+            return self::STATUS_REDEEMED;
+        }
+
+        if ($this->isRotated()) {
+            return 'rotated';
+        }
+
+        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+            return self::STATUS_EXPIRED;
+        }
+
+        return self::STATUS_PENDING;
     }
 }
