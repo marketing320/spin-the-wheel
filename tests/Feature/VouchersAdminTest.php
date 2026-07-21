@@ -191,4 +191,69 @@ class VouchersAdminTest extends TestCase
         $this->assertNotNull($voucher->rotated_at);
         $this->assertSame(1, $voucher->prize->fresh()->inventory_quantity);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redeemed-wins-over-expired safeguard
+    |--------------------------------------------------------------------------
+    */
+
+    private function ids($paginator): \Illuminate\Support\Collection
+    {
+        return collect($paginator->items())->pluck('id');
+    }
+
+    public function test_redeemed_then_expired_voucher_is_classified_as_redeemed(): void
+    {
+        // Redeemed while valid, now past its expiry date.
+        $voucher = $this->expiredVoucher();
+        $voucher->update(['status' => Voucher::STATUS_REDEEMED, 'redeemed_at' => now()->subMinute()]);
+
+        $this->assertTrue($voucher->isRedeemed());
+        $this->assertFalse($voucher->isExpired());
+        $this->assertSame('redeemed', $voucher->displayStatus());
+
+        $this->actingAs($this->admin(), 'web');
+        $component = Livewire::test(Vouchers::class);
+
+        $counts = $component->viewData('counts');
+        $this->assertSame(1, $counts['redeemed']);
+        $this->assertSame(0, $counts['expired']);
+
+        // Absent from the Expired tab, present in the Redeemed tab.
+        $this->assertFalse($this->ids($component->set('filter', 'expired')->viewData('vouchers'))->contains($voucher->id));
+        $this->assertTrue($this->ids($component->set('filter', 'redeemed')->viewData('vouchers'))->contains($voucher->id));
+    }
+
+    public function test_voucher_with_redeemed_at_but_stale_status_still_counts_as_redeemed(): void
+    {
+        // The safeguard's whole point: redeemed_at is set but the status column
+        // was never flipped. redeemed_at must win everywhere.
+        $voucher = $this->expiredVoucher();
+        $voucher->forceFill(['redeemed_at' => now()->subMinute()])->save(); // status stays 'pending'
+
+        $this->assertTrue($voucher->isRedeemed());
+        $this->assertFalse($voucher->isExpired());
+        $this->assertFalse($voucher->isRedeemable());
+        $this->assertSame('redeemed', $voucher->displayStatus());
+
+        $this->actingAs($this->admin(), 'web');
+        $counts = Livewire::test(Vouchers::class)->viewData('counts');
+
+        $this->assertSame(1, $counts['redeemed']);
+        $this->assertSame(0, $counts['expired']);
+        $this->assertSame(0, $counts['pending']);
+    }
+
+    public function test_rotation_skips_a_redeemed_voucher_even_with_stale_status(): void
+    {
+        $voucher = $this->expiredVoucher();
+        $voucher->forceFill(['redeemed_at' => now()->subMinute()])->save(); // status stays 'pending'
+
+        $rotated = app(\App\Services\VoucherRotationService::class)->rotate($voucher);
+
+        $this->assertFalse($rotated);
+        $this->assertNull($voucher->fresh()->rotated_at);
+        $this->assertSame(0, $voucher->prize->fresh()->inventory_quantity);
+    }
 }

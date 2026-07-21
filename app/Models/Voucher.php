@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -63,24 +64,40 @@ class Voucher extends Model
         return $this->belongsTo(User::class, 'redeemed_by');
     }
 
+    /**
+     * A redeemed voucher is never considered expired — even once it is past
+     * its expiry date (it was redeemed while still valid).
+     */
     public function isExpired(): bool
     {
+        if ($this->isRedeemed()) {
+            return false;
+        }
+
         return $this->status === self::STATUS_EXPIRED
             || ($this->status === self::STATUS_PENDING && $this->expires_at->isPast());
     }
 
+    /**
+     * Redemption is tracked by `redeemed_at`; that column — not the `status`
+     * string — is the source of truth, so a redeemed voucher is treated as
+     * redeemed everywhere even if `status` was somehow never flipped.
+     */
     public function isRedeemed(): bool
     {
-        return $this->status === self::STATUS_REDEEMED;
+        return $this->redeemed_at !== null || $this->status === self::STATUS_REDEEMED;
     }
 
     /**
-     * Whether this voucher can be redeemed right now (still pending and not
-     * past its expiry — evaluated lazily rather than swept by a job).
+     * Whether this voucher can be redeemed right now (still pending, not
+     * already redeemed, and not past its expiry — evaluated lazily rather than
+     * swept by a job).
      */
     public function isRedeemable(): bool
     {
-        return $this->status === self::STATUS_PENDING && ! $this->expires_at->isPast();
+        return $this->status === self::STATUS_PENDING
+            && $this->redeemed_at === null
+            && ! $this->expires_at->isPast();
     }
 
     /**
@@ -123,5 +140,46 @@ class Voucher extends Model
         }
 
         return self::STATUS_PENDING;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status scopes
+    |--------------------------------------------------------------------------
+    | Single source of truth for the /admin/vouchers tabs, counts, CSV export,
+    | and rotation eligibility. `redeemed_at` wins over the `status` column
+    | throughout, and the four scopes are mutually exclusive.
+    */
+
+    /** Redeemed — by redeemed_at (authoritative) or the status column. */
+    public function scopeRedeemed(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q
+            ->whereNotNull('redeemed_at')
+            ->orWhere('status', self::STATUS_REDEEMED));
+    }
+
+    /** Still within its redemption window: pending, unredeemed, not rotated. */
+    public function scopeStillActive(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_PENDING)
+            ->whereNull('redeemed_at')
+            ->whereNull('rotated_at')
+            ->where('expires_at', '>=', now());
+    }
+
+    /** Past expiry, never redeemed, not yet rotated — a rotation candidate. */
+    public function scopeExpiredUnused(Builder $query): Builder
+    {
+        return $query->whereNull('redeemed_at')
+            ->where('status', '!=', self::STATUS_REDEEMED)
+            ->whereNull('rotated_at')
+            ->where('expires_at', '<', now());
+    }
+
+    /** Already rotated back onto the wheel. */
+    public function scopeRotated(Builder $query): Builder
+    {
+        return $query->whereNotNull('rotated_at');
     }
 }

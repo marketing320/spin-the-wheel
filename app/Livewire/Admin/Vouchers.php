@@ -76,24 +76,18 @@ class Vouchers extends Component
     }
 
     /**
-     * Apply the active status filter. Lazy expiry (a still-"pending" row that
-     * is past expires_at) is resolved here in SQL so the tabs are accurate
-     * without a background sweep.
+     * Apply the active status filter using the shared Voucher scopes, so the
+     * tabs match the counts, the CSV export, and rotation eligibility exactly.
+     * Lazy expiry (a still-"pending" row past expires_at) and the redeemed_at
+     * source-of-truth rule are both resolved inside those scopes.
      */
     private function applyFilter($query): void
     {
-        $now = now();
-
         match ($this->filter) {
-            'pending' => $query->where('status', Voucher::STATUS_PENDING)
-                ->whereNull('rotated_at')
-                ->where('expires_at', '>=', $now),
-            'redeemed' => $query->where('status', Voucher::STATUS_REDEEMED),
-            'expired' => $query->whereNull('rotated_at')
-                ->whereNull('redeemed_at')
-                ->where('status', '!=', Voucher::STATUS_REDEEMED)
-                ->where('expires_at', '<', $now),
-            'rotated' => $query->whereNotNull('rotated_at'),
+            'pending' => $query->stillActive(),
+            'redeemed' => $query->redeemed(),
+            'expired' => $query->expiredUnused(),
+            'rotated' => $query->rotated(),
             default => $query,
         };
     }
@@ -118,16 +112,12 @@ class Vouchers extends Component
 
     public function render()
     {
-        $now = now();
-
         $counts = [
             'all' => Voucher::count(),
-            'pending' => Voucher::where('status', Voucher::STATUS_PENDING)
-                ->whereNull('rotated_at')->where('expires_at', '>=', $now)->count(),
-            'redeemed' => Voucher::where('status', Voucher::STATUS_REDEEMED)->count(),
-            'expired' => Voucher::whereNull('rotated_at')->whereNull('redeemed_at')
-                ->where('status', '!=', Voucher::STATUS_REDEEMED)->where('expires_at', '<', $now)->count(),
-            'rotated' => Voucher::whereNotNull('rotated_at')->count(),
+            'pending' => Voucher::stillActive()->count(),
+            'redeemed' => Voucher::redeemed()->count(),
+            'expired' => Voucher::expiredUnused()->count(),
+            'rotated' => Voucher::rotated()->count(),
         ];
 
         $vouchers = $this->baseQuery()

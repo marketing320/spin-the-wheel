@@ -69,10 +69,7 @@ class VoucherRotationService
         $rotated = 0;
 
         Voucher::query()
-            ->whereNull('rotated_at')
-            ->whereNull('redeemed_at')
-            ->where('status', '!=', Voucher::STATUS_REDEEMED)
-            ->where('expires_at', '<', now())
+            ->expiredUnused()
             ->when($campaign, fn ($q) => $q->where('campaign_id', $campaign->id))
             ->select('id')
             ->chunkById(200, function ($vouchers) use (&$rotated) {

@@ -15,8 +15,6 @@ class VoucherExportController extends Controller
 {
     public function export(Request $request): StreamedResponse
     {
-        $now = now();
-
         $query = Voucher::query()
             ->with(['prize:id,name,rarity', 'player:id,email,display_name', 'campaign:id,name', 'redeemedByUser:id,name'])
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -29,14 +27,14 @@ class VoucherExportController extends Controller
                             ->orWhere('display_name', 'like', "%{$term}%"));
                 });
             })
-            ->when($request->filled('filter'), function ($q) use ($request, $now) {
+            ->when($request->filled('filter'), function ($q) use ($request) {
+                // Same scopes the admin Vouchers tabs use, so an export matches
+                // exactly what was on screen.
                 match ($request->string('filter')->value()) {
-                    'pending' => $q->where('status', Voucher::STATUS_PENDING)
-                        ->whereNull('rotated_at')->where('expires_at', '>=', $now),
-                    'redeemed' => $q->where('status', Voucher::STATUS_REDEEMED),
-                    'expired' => $q->whereNull('rotated_at')->whereNull('redeemed_at')
-                        ->where('status', '!=', Voucher::STATUS_REDEEMED)->where('expires_at', '<', $now),
-                    'rotated' => $q->whereNotNull('rotated_at'),
+                    'pending' => $q->stillActive(),
+                    'redeemed' => $q->redeemed(),
+                    'expired' => $q->expiredUnused(),
+                    'rotated' => $q->rotated(),
                     default => $q,
                 };
             })
