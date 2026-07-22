@@ -1,13 +1,13 @@
 <div>
     <x-admin.page-header title="Spin History" subtitle="Every spin session across your campaigns.">
-        <a href="{{ route('admin.spins.export', ['search' => $search, 'campaign_id' => $campaignId, 'status' => $status]) }}" class="btn-primary !py-2 text-sm">Export CSV</a>
+        <a href="{{ route('admin.spins.export', ['search' => $search, 'campaign_id' => $campaignId, 'prize_id' => $prizeId, 'status' => $status]) }}" class="btn-primary !py-2 text-sm">Export CSV</a>
     </x-admin.page-header>
 
     <div class="glass mb-5 rounded-2xl p-4">
-        <div class="grid gap-3 sm:grid-cols-3">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
                 <label class="label">Search</label>
-                <input type="text" wire:model.live.debounce.400ms="search" placeholder="Player email…" class="field">
+                <input type="text" wire:model.live.debounce.400ms="search" placeholder="Player email or name…" class="field">
             </div>
             <div>
                 <label class="label">Campaign</label>
@@ -15,6 +15,15 @@
                     <option value="">All campaigns</option>
                     @foreach ($campaigns as $campaign)
                         <option value="{{ $campaign->id }}">{{ $campaign->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="label">Prize</label>
+                <select wire:model.live="prizeId" class="field">
+                    <option value="">All prizes</option>
+                    @foreach ($prizes as $prize)
+                        <option value="{{ $prize->id }}">{{ $prize->name }}@if ($showPrizeCampaign && $prize->campaign) · {{ $prize->campaign->name }}@endif</option>
                     @endforeach
                 </select>
             </div>

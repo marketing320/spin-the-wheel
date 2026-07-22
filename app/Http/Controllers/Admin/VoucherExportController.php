@@ -22,9 +22,9 @@ class VoucherExportController extends Controller
                 $q->where(function ($w) use ($term) {
                     $w->where('code', 'like', "%{$term}%")
                         ->orWhereHas('prize', fn ($p) => $p->where('name', 'like', "%{$term}%"))
-                        ->orWhereHas('player', fn ($p) => $p
+                        ->orWhereHas('player', fn ($p) => $p->where(fn ($pw) => $pw
                             ->where('email', 'like', "%{$term}%")
-                            ->orWhere('display_name', 'like', "%{$term}%"));
+                            ->orWhere('display_name', 'like', "%{$term}%")));
                 });
             })
             ->when($request->filled('filter'), function ($q) use ($request) {

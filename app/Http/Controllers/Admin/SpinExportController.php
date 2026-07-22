@@ -15,9 +15,12 @@ class SpinExportController extends Controller
             ->with(['player:id,email,display_name', 'prize:id,name,rarity', 'campaign:id,name'])
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = $request->string('search');
-                $q->whereHas('player', fn ($p) => $p->where('email', 'like', "%{$term}%"));
+                $q->whereHas('player', fn ($p) => $p->where(fn ($w) => $w
+                    ->where('email', 'like', "%{$term}%")
+                    ->orWhere('display_name', 'like', "%{$term}%")));
             })
             ->when($request->filled('campaign_id'), fn ($q) => $q->where('campaign_id', $request->integer('campaign_id')))
+            ->when($request->filled('prize_id'), fn ($q) => $q->where('prize_id', $request->integer('prize_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->latest();
 
