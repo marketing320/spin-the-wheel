@@ -29,7 +29,7 @@ return [
         // considered stuck and eligible for release.
         'lock_timeout_seconds' => (int) env('SPIN_LOCK_TIMEOUT_SECONDS', 45),
         // Fixed wheel animation duration in milliseconds.
-        'default_duration_ms' => 8000,
+        'default_duration_ms' => 12000,
         // Full soundtrack duration, including the congratulations ending.
         'sound_duration_ms' => 11000,
         // Result-display cooldown before the next queued player may spin.

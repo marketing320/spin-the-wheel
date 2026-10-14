@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Campaign;
+use App\Models\SpinResult;
 use App\Services\SpinLockService;
 use App\Services\SpinQueueService;
 use App\Services\SpinService;
@@ -13,8 +14,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * The public event-screen display. Mirrors the active player spin in realtime
- * and shows an idle screen when nobody is spinning. Exposes no sensitive data.
+ * Public event displays. The main live view lists recent prize wins; the roadshow
+ * and front-view screens mirror active player spins without exposing private data.
  */
 class LiveViewController extends Controller
 {
@@ -27,13 +28,58 @@ class LiveViewController extends Controller
 
     public function index(): View
     {
-        return view('live-view', $this->sharedData());
+        $campaign = Campaign::current();
+
+        return view('live-view', [
+            'campaign' => $campaign,
+            'winners' => $this->recentWinners($campaign),
+            'branding' => Settings::get('live_view.branding'),
+            'leaderboardRoute' => route('live-view.leaderboard'),
+        ]);
+    }
+
+    /**
+     * The latest completed prize wins for the current campaign, newest first.
+     *
+     * @return array<int, array{name: string, prize: string, rarity: string, won_at: string}>
+     */
+    protected function recentWinners(?Campaign $campaign): array
+    {
+        if (! $campaign) {
+            return [];
+        }
+
+        $results = SpinResult::query()
+            ->join('spin_sessions', 'spin_sessions.id', '=', 'spin_results.spin_session_id')
+            ->select('spin_results.*')
+            ->with(['player', 'prize', 'spinSession'])
+            ->where('spin_results.campaign_id', $campaign->id)
+            ->whereNotNull('spin_sessions.completed_at')
+            ->orderByRaw('COALESCE(spin_sessions.completed_at, spin_results.created_at) DESC')
+            ->orderByDesc('spin_results.id')
+            ->limit(10)
+            ->get();
+
+        return $results->map(function (SpinResult $result): array {
+            return [
+                'name' => $this->spins->playerDisplay($result->player),
+                'prize' => $result->prize?->name ?? 'Prize winner',
+                'rarity' => $result->prize?->rarity ?? 'common',
+                'won_at' => ($result->spinSession?->completed_at ?? $result->created_at)?->toIso8601String() ?? '',
+            ];
+        })->all();
+    }
+
+    public function leaderboardSnapshot(): JsonResponse
+    {
+        return response()
+            ->json(['winners' => $this->recentWinners(Campaign::current())])
+            ->header('Cache-Control', 'no-store, private');
     }
 
     /**
      * Portrait layout for LED roadshow panels (344px single / 688px double).
-     * Same data, same realtime JS (resources/js/spin/live-view.js) and the
-     * same DOM element IDs as /live-view — only the Blade markup/CSS differ.
+     * Uses the shared realtime spin data and animation used by /front-view.
      */
     public function roadshow(): View
     {
@@ -41,8 +87,8 @@ class LiveViewController extends Controller
     }
 
     /**
-     * Full-screen roadshow display: identical to /roadshow-live, except idle
-     * shows an admin-uploaded image slideshow (full takeover) instead of the
+     * Full-screen roadshow display: like /roadshow-live, except idle shows an
+     * admin-uploaded image slideshow (full takeover) instead of the
      * idle-spinning wheel — see resources/js/spin/live-view.js's optional
      * #idle-slideshow/#live-content handling. With the banner disabled or no
      * images uploaded, it silently falls back to the normal idle-spin wheel.

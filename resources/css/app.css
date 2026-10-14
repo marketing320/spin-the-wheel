@@ -168,6 +168,169 @@
     animation: float-slow 3s steps(6, end) infinite;
 }
 
+.landing-launch-backdrop {
+    position: absolute;
+    z-index: -1;
+    top: -2rem;
+    left: 50%;
+    width: 100vw;
+    height: min(52rem, 110vh);
+    overflow: hidden;
+    transform: translateX(-50%);
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 17%, rgb(255 255 255 / 90%) 0, rgb(255 255 255 / 0%) 55%),
+        radial-gradient(ellipse at 15% 20%, rgb(232 79 151 / 20%) 0, transparent 34%),
+        radial-gradient(ellipse at 83% 22%, rgb(18 165 176 / 19%) 0, transparent 32%),
+        radial-gradient(ellipse at 50% 60%, rgb(246 195 28 / 14%) 0, transparent 45%);
+}
+
+.landing-launch-backdrop::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    opacity: .24;
+    background-image: radial-gradient(#7b5cff 1px, transparent 1px);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 76%);
+}
+
+.landing-confetti {
+    position: absolute;
+    top: -2rem;
+    left: var(--confetti-left);
+    width: var(--confetti-size);
+    aspect-ratio: 1 / 1.45;
+    border: 2px solid #0f172a;
+    border-radius: 3px;
+    background: var(--confetti-color);
+    box-shadow: 2px 2px 0 rgb(15 23 42 / 18%);
+    animation: launch-confetti-fall var(--confetti-speed) linear infinite;
+    animation-delay: var(--confetti-delay);
+}
+
+.landing-confetti-one { --confetti-left: 11%; --confetti-size: 12px; --confetti-color: #eb242a; --confetti-speed: 8s; --confetti-delay: -1.2s; --confetti-drift: 42px; }
+.landing-confetti-two { --confetti-left: 23%; --confetti-size: 9px; --confetti-color: #f6c31c; --confetti-speed: 10s; --confetti-delay: -3s; --confetti-drift: -28px; }
+.landing-confetti-three { --confetti-left: 38%; --confetti-size: 8px; --confetti-color: #24b26b; --confetti-speed: 7s; --confetti-delay: -2.1s; --confetti-drift: 34px; }
+.landing-confetti-four { --confetti-left: 67%; --confetti-size: 12px; --confetti-color: #7b5cff; --confetti-speed: 11s; --confetti-delay: -.8s; --confetti-drift: -38px; }
+.landing-confetti-five { --confetti-left: 88%; --confetti-size: 10px; --confetti-color: #f5822b; --confetti-speed: 9s; --confetti-delay: -2.6s; --confetti-drift: 24px; }
+.landing-confetti-six { --confetti-left: 8%; --confetti-size: 8px; --confetti-color: #12a5b0; --confetti-speed: 12s; --confetti-delay: -3.4s; --confetti-drift: -32px; }
+.landing-confetti-seven { --confetti-left: 91%; --confetti-size: 12px; --confetti-color: #e84f97; --confetti-speed: 8.5s; --confetti-delay: -1.8s; --confetti-drift: -44px; }
+.landing-confetti-eight { --confetti-left: 19%; --confetti-size: 10px; --confetti-color: #7b5cff; --confetti-speed: 10.5s; --confetti-delay: -2.3s; --confetti-drift: 30px; }
+.landing-confetti-nine { --confetti-left: 78%; --confetti-size: 8px; --confetti-color: #24b26b; --confetti-speed: 7.5s; --confetti-delay: -.5s; --confetti-drift: 36px; }
+.landing-confetti-ten { --confetti-left: 52%; --confetti-size: 7px; --confetti-color: #f6c31c; --confetti-speed: 12.5s; --confetti-delay: -3.1s; --confetti-drift: -22px; }
+
+@keyframes launch-confetti-fall {
+    from { transform: translate3d(0, 0, 0) rotate(0); }
+    to { transform: translate3d(var(--confetti-drift), 110vh, 0) rotate(720deg); }
+}
+
+.live-display-backdrop {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 18% 28%, rgb(232 79 151 / 18%) 0, transparent 30%),
+        radial-gradient(ellipse at 82% 20%, rgb(18 165 176 / 18%) 0, transparent 32%),
+        radial-gradient(ellipse at 52% 88%, rgb(246 195 28 / 16%) 0, transparent 38%);
+}
+
+.live-display-backdrop::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    opacity: .2;
+    background-image: radial-gradient(#7b5cff 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(135deg, #000 0%, transparent 70%);
+}
+
+.live-orbit {
+    position: absolute;
+    display: block;
+    width: clamp(7rem, 18vw, 16rem);
+    aspect-ratio: 1;
+    border: clamp(8px, 1.2vw, 16px) solid rgb(255 255 255 / 40%);
+    border-radius: 42% 58% 58% 42% / 42% 42% 58% 58%;
+    box-shadow: 0 0 0 2px rgb(15 23 42 / 5%), inset 0 0 0 2px rgb(15 23 42 / 4%);
+    animation: live-orbit-drift 12s ease-in-out infinite;
+}
+
+.live-orbit-one {
+    top: 10%;
+    left: -4rem;
+    background: rgb(232 79 151 / 16%);
+}
+
+.live-orbit-two {
+    top: 24%;
+    right: -5rem;
+    width: clamp(9rem, 24vw, 21rem);
+    border-color: rgb(255 255 255 / 32%);
+    background: rgb(18 165 176 / 15%);
+    animation-delay: -4s;
+    animation-direction: reverse;
+}
+
+.live-orbit-three {
+    bottom: -7rem;
+    left: 36%;
+    width: clamp(10rem, 25vw, 22rem);
+    background: rgb(246 195 28 / 13%);
+    animation-delay: -7s;
+}
+
+.live-sparkle {
+    position: absolute;
+    color: #7b5cff;
+    font-size: clamp(1.25rem, 3vw, 2.5rem);
+    text-shadow: 2px 2px 0 rgb(15 23 42 / 10%);
+    animation: live-sparkle-pop 3.4s ease-in-out infinite;
+}
+
+.live-sparkle-one { top: 16%; left: 22%; color: #eb242a; }
+.live-sparkle-two { top: 39%; left: 8%; color: #0e75bc; animation-delay: -1.1s; }
+.live-sparkle-three { top: 13%; right: 24%; color: #f5822b; animation-delay: -2.3s; }
+.live-sparkle-four { top: 52%; right: 9%; color: #24b26b; animation-delay: -.7s; }
+.live-sparkle-five { bottom: 14%; right: 32%; color: #e84f97; animation-delay: -1.8s; }
+
+@keyframes live-orbit-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); border-radius: 42% 58% 58% 42% / 42% 42% 58% 58%; }
+    50% { transform: translate3d(12px, -18px, 0) rotate(9deg); border-radius: 58% 42% 42% 58% / 58% 58% 42% 42%; }
+}
+
+@keyframes live-sparkle-pop {
+    0%, 100% { transform: translateY(0) rotate(0) scale(.85); opacity: .55; }
+    50% { transform: translateY(-10px) rotate(18deg) scale(1.15); opacity: 1; }
+}
+
+.live-winners-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 32rem));
+    justify-content: center;
+    align-content: start;
+    gap: clamp(.75rem, 2vw, 1.25rem);
+    padding: clamp(.75rem, 2vw, 1.25rem);
+}
+
+.live-winner-card {
+    width: 100%;
+    box-shadow: 2px 2px 0 rgb(15 23 42 / 8%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-confetti {
+        animation: none;
+    }
+
+    .live-orbit,
+    .live-sparkle {
+        animation: none;
+    }
+}
+
 /* Arcade "pop" bounce — no glow, no gradient. */
 @keyframes arcade-pop {
     0%, 100% { transform: translateY(0); }

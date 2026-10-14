@@ -75,6 +75,16 @@ class PlayerRegistrationTest extends TestCase
             ->assertViewIs('desktop-blocked');
 
         $this->withHeader('User-Agent', $desktop)
+            ->get(route('live-view'))
+            ->assertForbidden()
+            ->assertViewIs('desktop-blocked');
+
+        $this->withHeader('User-Agent', $desktop)
+            ->get(route('live-view', ['mobile_device' => 1]))
+            ->assertForbidden()
+            ->assertViewIs('desktop-blocked');
+
+        $this->withHeader('User-Agent', $desktop)
             ->get(route('player.register'))
             ->assertForbidden()
             ->assertViewIs('desktop-blocked');

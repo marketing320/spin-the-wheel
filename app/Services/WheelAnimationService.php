@@ -89,7 +89,7 @@ class WheelAnimationService
     {
         // Authoritative spin length (ms), shared by the animation and the
         // soundtrack. Sourced from the admin-configurable default.
-        return (int) Settings::get('spin.default_duration_ms', config('spin.spin.default_duration_ms', 8000));
+        return (int) Settings::get('spin.default_duration_ms', config('spin.spin.default_duration_ms', 12000));
     }
 
     public function newSeed(): string
