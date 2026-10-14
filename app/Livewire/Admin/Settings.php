@@ -19,7 +19,7 @@ class Settings extends Component
 
     public int $spin_lock_timeout_seconds = 30;
 
-    public int $spin_default_duration_ms = 8000;
+    public int $spin_default_duration_ms = 12000;
 
     public string $app_name = '';
 

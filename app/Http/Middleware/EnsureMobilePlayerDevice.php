@@ -17,7 +17,6 @@ class EnsureMobilePlayerDevice
             '/Mobile|Android|iPhone|iPad|iPod|Tablet|Silk|Kindle|PlayBook|Opera Mini|IEMobile|webOS/i',
             $agent,
         );
-
         if (! $mobileOrTablet) {
             return response()->view('desktop-blocked', status: 403);
         }

@@ -39,9 +39,15 @@
                 @endauth
             </nav>
 
-            {{-- Mobile hamburger trigger — opens the right-side drawer below. --}}
+            {{-- Compact mobile account menu; desktop links remain inline above. --}}
             @auth('player')
-                <button type="button" @click="mobileNavOpen = true" class="btn-ghost !p-2.5 sm:hidden" aria-label="Open menu">
+                <button type="button"
+                        x-ref="mobileMenuTrigger"
+                        @click="mobileNavOpen = true; $nextTick(() => $refs.mobileMenuClose.focus())"
+                        :aria-expanded="mobileNavOpen.toString()"
+                        aria-controls="mobile-account-menu"
+                        class="btn-ghost !rounded-lg !p-2 sm:hidden"
+                        aria-label="Open account menu">
                     <i data-lucide="menu" class="h-5 w-5"></i>
                 </button>
             @endauth
@@ -56,27 +62,68 @@
         </footer>
     </div>
 
-    {{-- Mobile nav drawer (My Prizes / Logout), slides in from the right. --}}
+    {{-- Compact mobile account menu. --}}
     @auth('player')
-        <div x-show="mobileNavOpen" x-cloak x-transition.opacity
+        <div x-show="mobileNavOpen" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
              @click="mobileNavOpen = false"
-             class="fixed inset-0 z-40 bg-slate-900/40 sm:hidden"></div>
+             @keydown.escape.window="mobileNavOpen = false; $refs.mobileMenuTrigger.focus()"
+             class="fixed inset-0 z-40 bg-slate-900/15 backdrop-blur-[1px] sm:hidden"></div>
 
-        <aside :class="mobileNavOpen ? 'translate-x-0' : 'translate-x-full'"
-               class="fixed inset-y-0 right-0 z-50 w-64 max-w-[80vw] transform border-l-2 border-slate-900 bg-white p-5 shadow-xl transition-transform duration-200 ease-out sm:hidden">
-            <div class="flex items-center justify-between">
-                <span class="font-display text-sm font-bold text-slate-900">Menu</span>
-                <button type="button" @click="mobileNavOpen = false" aria-label="Close menu" class="text-slate-500 hover:text-slate-900">
+        <aside id="mobile-account-menu"
+               x-show="mobileNavOpen"
+               x-cloak
+               x-transition:enter="transition ease-out duration-150"
+               x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+               x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+               x-transition:leave="transition ease-in duration-100"
+               x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+               x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+               @keydown.escape.window="mobileNavOpen = false; $refs.mobileMenuTrigger.focus()"
+               class="fixed right-4 top-[4.75rem] z-50 w-64 max-w-[calc(100vw-2rem)] origin-top-right rounded-2xl border-[3px] border-slate-900 bg-white p-3 shadow-[5px_5px_0_0_#0f172a] sm:hidden">
+            <div class="mb-2 flex items-center justify-between px-1">
+                <div>
+                    <span class="block font-display text-xs font-bold text-slate-900">Your account</span>
+                </div>
+                <button type="button"
+                        x-ref="mobileMenuClose"
+                        @click="mobileNavOpen = false; $refs.mobileMenuTrigger.focus()"
+                        aria-label="Close menu"
+                        class="grid h-9 w-9 place-items-center rounded-lg border-2 border-transparent text-slate-500 transition hover:border-slate-900 hover:bg-slate-100 hover:text-slate-900 focus:border-slate-900 focus:outline-none">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
-            <nav class="mt-6 flex flex-col gap-2">
-                <a href="{{ route('player.prizes') }}" wire:navigate @click="mobileNavOpen = false" class="btn-ghost w-full justify-start !py-2.5 text-sm">
-                    <i data-lucide="gift" class="h-4 w-4"></i> My Prizes
+            <nav aria-label="Account menu" class="flex flex-col gap-2">
+                <a href="{{ route('player.prizes') }}"
+                   wire:navigate
+                   @click="mobileNavOpen = false"
+                   class="group flex items-center gap-3 rounded-xl border-2 border-slate-200 px-3 py-2.5 text-slate-900 transition hover:-translate-y-0.5 hover:border-brand-500 hover:bg-brand-50 focus:border-brand-500 focus:outline-none">
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-2 border-slate-900 bg-sun-500 text-slate-900 transition group-hover:rotate-[-6deg]">
+                        <i data-lucide="gift" class="h-4 w-4"></i>
+                    </span>
+                    <span class="min-w-0">
+                        <span class="block font-display text-[0.65rem] font-bold">My Prizes</span>
+                        <span class="mt-1 block text-xs text-slate-500">See your rewards</span>
+                    </span>
                 </a>
                 <form method="POST" action="{{ route('player.logout') }}" class="w-full">
                     @csrf
-                    <button type="submit" class="btn-ghost w-full justify-start !py-2.5 text-sm"><i data-lucide="log-out" class="h-4 w-4"></i> Logout</button>
+                    <button type="submit"
+                            @click="mobileNavOpen = false"
+                            class="group flex w-full items-center gap-3 rounded-xl border-2 border-slate-200 px-3 py-2.5 text-left text-slate-900 transition hover:-translate-y-0.5 hover:border-cherry-400 hover:bg-cherry-50 focus:border-cherry-400 focus:outline-none">
+                        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-2 border-slate-900 bg-cherry-100 text-cherry-600 transition group-hover:rotate-[-6deg]">
+                            <i data-lucide="log-out" class="h-4 w-4"></i>
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block font-display text-[0.65rem] font-bold">Log out</span>
+                            <span class="mt-1 block text-xs text-slate-500">End your session</span>
+                        </span>
+                    </button>
                 </form>
             </nav>
         </aside>

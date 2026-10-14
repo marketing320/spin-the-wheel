@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/landing.js',
                 'resources/js/spin/spin-page.js',
                 'resources/js/spin/live-view.js',
+                'resources/js/spin/leaderboard.js',
                 'resources/js/admin/redeem-scanner.js',
             ],
             refresh: true,

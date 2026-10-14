@@ -18,12 +18,25 @@
         <meta name="twitter:image" content="{{ asset('favicon.ico') }}">
     @endpush
 
-    <div class="w-full">
+    <div @class(['landing-launch relative isolate w-full' => $campaign, 'w-full' => ! $campaign])>
         @if ($campaign)
+            <div class="landing-launch-backdrop" aria-hidden="true">
+                <span class="landing-confetti landing-confetti-one"></span>
+                <span class="landing-confetti landing-confetti-two"></span>
+                <span class="landing-confetti landing-confetti-three"></span>
+                <span class="landing-confetti landing-confetti-four"></span>
+                <span class="landing-confetti landing-confetti-five"></span>
+                <span class="landing-confetti landing-confetti-six"></span>
+                <span class="landing-confetti landing-confetti-seven"></span>
+                <span class="landing-confetti landing-confetti-eight"></span>
+                <span class="landing-confetti landing-confetti-nine"></span>
+                <span class="landing-confetti landing-confetti-ten"></span>
+            </div>
+
             {{-- Hero --}}
             <div class="mx-auto max-w-3xl text-center">
-                <span class="pill border-2 border-slate-900 bg-grass-500 font-display uppercase text-white pixel-shadow">
-                    <span class="inline-block h-2 w-2 rounded-full bg-white"></span> Now live
+                <span class="pill border-2 border-slate-900 bg-cherry-500 font-display uppercase text-white pixel-shadow">
+                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-grass-500 ring-2 ring-grass-200"></span> Now live
                 </span>
 
                 <h1 class="mt-5 font-display text-4xl font-bold leading-tight text-slate-900 sm:text-6xl">
@@ -45,7 +58,7 @@
                     @else
                         <a href="{{ route('player.register') }}" wire:navigate class="pressable-control btn-primary animate-pulse-glow text-lg"><i data-lucide="play" class="h-5 w-5"></i> Play now</a>
                     @endif
-                    <a href="{{ route('live-view') }}" target="_blank" class="btn-ghost text-lg"><i data-lucide="tv" class="h-5 w-5"></i> Watch live</a>
+                    <a href="{{ route('live-view') }}" class="btn-ghost text-lg"><i data-lucide="tv" class="h-5 w-5"></i> Watch live</a>
                 </div>
             </div>
 

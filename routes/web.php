@@ -20,8 +20,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [LandingController::class, 'index'])
     ->middleware('player.mobile')->name('home');
 
-// Public event-screen display + its realtime bootstrap endpoint.
-Route::get('/live-view', [LiveViewController::class, 'roadshow'])->name('live-view');
+// Public winner leaderboard + live spin display endpoints.
+Route::get('/live-view', [LiveViewController::class, 'index'])
+    ->middleware('player.mobile')->name('live-view');
+Route::get('/live-view/leaderboard', [LiveViewController::class, 'leaderboardSnapshot'])->name('live-view.leaderboard');
 Route::get('/live-view/active-spin', [LiveViewController::class, 'active'])->name('live-view.active');
 
 // Portrait LED roadshow display — same data/realtime endpoint as /live-view.

@@ -412,7 +412,7 @@ class AdminPagesTest extends TestCase
 
         // A valid value within range saves and persists.
         Livewire::test(AdminSettings::class)
-            ->assertSet('spin_default_duration_ms', 8000)
+            ->assertSet('spin_default_duration_ms', 12000)
             ->set('spin_default_duration_ms', 11000)
             ->call('save')
             ->assertHasNoErrors(['spin_default_duration_ms']);

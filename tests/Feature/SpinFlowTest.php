@@ -79,8 +79,8 @@ class SpinFlowTest extends TestCase
         $this->assertTrue($this->campaign->prizes->pluck('id')->contains($session->prize_id));
         $this->assertNotEmpty($session->metadata['segments']);
         $this->assertSame(SpinSession::STATUS_ACTIVE, $session->status);
-        $this->assertSame(8000, $session->spin_duration_ms);
-        $this->assertEquals(8000, $session->started_at->diffInMilliseconds($session->ends_at));
+        $this->assertSame(12000, $session->spin_duration_ms);
+        $this->assertEquals(12000, $session->started_at->diffInMilliseconds($session->ends_at));
         $this->assertEquals(7000, $session->ends_at->diffInMilliseconds($session->buffer_ends_at));
         $this->assertSame(11000, $this->spins->buildStartedPayload($session)['sound_duration_ms']);
     }
@@ -129,7 +129,7 @@ class SpinFlowTest extends TestCase
         $this->assertSame(SpinSession::GUARD_ON, $session->active_guard);
         $this->assertDatabaseHas('spin_results', ['spin_session_id' => $session->id]);
 
-        $this->travel(16)->seconds();
+        $this->travel(20)->seconds();
         app(SpinLockService::class)->currentActive();
 
         $session->refresh();
@@ -143,7 +143,7 @@ class SpinFlowTest extends TestCase
         $session = $this->spins->start($this->readyPlayer());
         $this->spins->complete($session);
 
-        $this->travel(14)->seconds();
+        $this->travel(18)->seconds();
 
         try {
             $this->spins->start($this->readyPlayer());

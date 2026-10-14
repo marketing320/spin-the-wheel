@@ -37,7 +37,7 @@ export class SpinController {
         cancelAnimationFrame(this.raf);
 
         const startMs = Date.parse(payload.started_at_server);
-        const duration = Math.max(1, payload.spin_duration_ms || 8000);
+        const duration = Math.max(1, payload.spin_duration_ms || 12000);
         const soundDuration = Math.max(duration, payload.sound_duration_ms || 11000);
         const finalAngle = payload.final_angle || 0;
         const segmentCount = payload.wheel_segments?.length || payload.segment_count || 1;
@@ -58,7 +58,8 @@ export class SpinController {
         const tick = () => {
             const elapsed = this.serverNow() - startMs;
             const progress = Math.min(Math.max(elapsed / duration, 0), 1);
-            const state = physics.sample(progress);
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            const state = physics.sample(easedProgress);
 
             this.wheel?.setRotationDegrees(state.wheelDeg);
             if (this.pointer) this.pointer.style.rotate = `${state.pointerDeg}deg`;
