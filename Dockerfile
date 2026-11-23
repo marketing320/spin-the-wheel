@@ -2,8 +2,6 @@
 
 # ---------------------------------------------------------------------------
 # Stage 1 — build the frontend assets (Vite + Tailwind).
-# No .env is present here (see .dockerignore), so VITE_* fall back to their
-# defaults — notably VITE_REVERB_ENABLED is off, i.e. polling mode.
 # ---------------------------------------------------------------------------
 FROM node:22-alpine AS frontend
 WORKDIR /app

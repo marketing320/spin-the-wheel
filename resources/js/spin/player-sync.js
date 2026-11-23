@@ -1,7 +1,6 @@
 import { createWheel } from './wheel-scene';
 import { SpinController } from './spin-controller';
 import { fireConfetti } from './confetti-controller';
-import { subscribeToSpins } from './live-sync';
 
 function readConfig() {
     const el = document.getElementById('spin-config');
@@ -77,13 +76,9 @@ export function initPlayerPage() {
     const wheel = createWheel(stage, config.segments || []);
     const controller = new SpinController(wheel, { pointer, soundUrl: config.soundUrl });
     const button = document.getElementById('spin-button');
-    const idleLabel = button?.querySelector('[data-label-idle-text]');
     const hint = document.getElementById('spin-hint');
     const banner = document.getElementById('status-banner');
     const modal = document.getElementById('result-modal');
-    const queueModal = document.getElementById('queue-modal');
-    const queueModalPosition = document.getElementById('queue-modal-position');
-    const turnModal = document.getElementById('turn-modal');
     const locationModal = document.getElementById('location-modal');
     const errorModal = document.getElementById('error-modal');
     const errorModalTitle = document.getElementById('error-modal-title');
@@ -93,8 +88,7 @@ export function initPlayerPage() {
     const csrf = config.csrf || document.querySelector('meta[name=csrf-token]')?.content;
 
     // Live prize display above the pointer — shows whatever is under the pointer.
-    const segmentsList = config.segments || [];
-    const prizeChip = document.getElementById('pointer-prize-chip');
+    let segmentsList = config.segments || [];
     const prizeImage = document.getElementById('pointer-prize-image');
     const prizeIcon = document.getElementById('pointer-prize-icon');
     const prizeName = document.getElementById('pointer-prize-name');
@@ -103,7 +97,6 @@ export function initPlayerPage() {
         const seg = segmentsList[index];
         if (!seg || !prizeName) return;
         prizeName.textContent = seg.label || '';
-        if (prizeChip) prizeChip.style.background = seg.color || '#0e75bc';
         if (prizeImage && prizeIcon) {
             const hasImage = Boolean(seg.image);
             prizeImage.classList.toggle('hidden', !hasImage);
@@ -112,29 +105,31 @@ export function initPlayerPage() {
         }
     }
 
+    function runSpin(payload, onComplete) {
+        const segments = payload.wheel_segments;
+        if (segments?.length && JSON.stringify(segments) !== JSON.stringify(segmentsList)) {
+            controller.wheel?.dispose?.();
+            controller.wheel = createWheel(stage, segments);
+            segmentsList = segments;
+        }
+        controller.run(payload, { onSegment: showSegment, onComplete });
+    }
+
     let mySpinId = null;
     let submitting = false;
     let spinning = false;
+    let rejectedWhileBusy = false;
     const locationRequired = Boolean(config.geofenceEnabled);
     let locationVerified = !locationRequired;
     let locationVerifying = false;
     let verifiedCoords = { lat: null, lng: null };
     let errorRetryAction = null;
     let eligibility = {
+        ...config.eligibility,
         eligible: Boolean(config.eligibility?.eligible),
-        spin_in_progress: Boolean(config.spinInProgress),
-        queue: config.queue || { queued: false, position: null, ahead: 0 },
-        can_start: false,
     };
 
     const setHint = (text) => { if (hint) hint.textContent = text || ''; };
-
-    function queueMessage(queue) {
-        const ahead = Number(queue?.ahead || 0);
-        if (ahead === 1) return 'There is 1 person in front of you. Please wait…';
-        if (ahead > 1) return `There are ${ahead} people in front of you. Please wait…`;
-        return 'You are first in the queue. Please wait for your turn…';
-    }
 
     const showModal = (node) => {
         node?.classList.remove('hidden');
@@ -163,59 +158,13 @@ export function initPlayerPage() {
         (retry ? errorModalRetry : errorModalClose)?.focus();
     }
 
-    // Whether the player has already tapped "Let's go!" on the turn modal for
-    // their current turn — prevents it popping back open on every poll tick
-    // while they still haven't spun. Reset once they leave the queue so it
-    // can show again next time they queue up.
-    let turnAcknowledged = false;
-
-    function updateQueueModals() {
-        const queue = eligibility.queue || {};
-        const queued = Boolean(queue.queued);
-        const canStart = Boolean(eligibility.can_start);
-
-        if (queued && canStart) {
-            hideModal(queueModal);
-            if (!turnAcknowledged) showModal(turnModal);
-            return;
-        }
-
-        if (queued) {
-            hideModal(turnModal);
-            const ahead = Number(queue.ahead || 0);
-            if (queueModalPosition) {
-                queueModalPosition.textContent = ahead === 0
-                    ? "You're next in line!"
-                    : ahead === 1
-                        ? '1 person ahead of you'
-                        : `${ahead} people ahead of you`;
-            }
-            showModal(queueModal);
-            return;
-        }
-
-        hideModal(queueModal);
-        hideModal(turnModal);
-        turnAcknowledged = false;
-    }
-
     function renderState() {
         if (!button) return;
 
-        const queue = eligibility.queue || {};
-        const ownSpinActive = Boolean(mySpinId && spinning);
         const locationReady = !locationRequired || locationVerified;
-        const canJoin = eligibility.eligible && locationReady && !queue.queued && !ownSpinActive && !submitting;
-        const canSpin = eligibility.eligible && locationReady && queue.queued && eligibility.can_start && !ownSpinActive && !submitting;
-        const available = eligibility.eligible && locationReady && !queue.queued && !eligibility.spin_in_progress && !ownSpinActive && !submitting;
-
-        button.disabled = !(canJoin || canSpin || available);
-        button.querySelector('[data-label-idle]')?.classList.toggle('hidden', submitting || ownSpinActive);
-        button.querySelector('[data-label-spinning]')?.classList.toggle('hidden', !(submitting || ownSpinActive));
-
-        if (idleLabel) {
-            idleLabel.textContent = canSpin ? 'YOUR TURN — SPIN' : 'SPIN!';
-        }
+        button.disabled = !eligibility.eligible || !locationReady || spinning || submitting;
+        button.querySelector('[data-label-idle]')?.classList.toggle('hidden', submitting || spinning);
+        button.querySelector('[data-label-spinning]')?.classList.toggle('hidden', !(submitting || spinning));
 
         if (!eligibility.eligible && eligibility.message) {
             if (banner) banner.innerHTML = `<div class="rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">${eligibility.message}</div>`;
@@ -224,16 +173,10 @@ export function initPlayerPage() {
             if (banner) banner.innerHTML = '';
             if (locationRequired && !locationVerified && !locationVerifying) {
                 setHint('Location verification is required before you can spin.');
-            } else if (queue.queued) {
-                setHint(canSpin ? 'It is your turn. Tap the button to spin!' : queueMessage(queue));
-            } else if (eligibility.spin_in_progress && !spinning) {
-                setHint('Another player is spinning…');
             } else if (!spinning && !submitting) {
-                setHint('');
+                setHint(rejectedWhileBusy ? 'A spin is already in progress. Try again shortly.' : '');
             }
         }
-
-        updateQueueModals();
     }
 
     async function post(url, body) {
@@ -352,9 +295,13 @@ export function initPlayerPage() {
     async function refreshEligibility() {
         try {
             const response = await fetch(config.routes.eligibility, {
+                cache: 'no-store',
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
-            if (response.ok) eligibility = await response.json();
+            if (response.ok) {
+                eligibility = await response.json();
+                if (!eligibility.spin_in_progress) rejectedWhileBusy = false;
+            }
             renderState();
         } catch (_) {
             // Preserve the last known state during a temporary network failure.
@@ -421,7 +368,6 @@ export function initPlayerPage() {
         if (rarity && result.prize_rarity) {
             rarity.innerHTML = `<span class="pill bg-slate-100 font-display uppercase text-slate-700 ring-2 ring-slate-300">${result.prize_rarity}</span>`;
         }
-        modal.querySelector('#result-message').textContent = result.redemption_message || '';
         showVoucher(result);
         const link = modal.querySelector('#result-link');
         if (link && mySpinId) link.href = config.routes.result.replace('SPIN_ID', mySpinId);
@@ -441,63 +387,17 @@ export function initPlayerPage() {
     }
 
     async function onSpinClick() {
-        if (submitting || (mySpinId && spinning)) return;
+        if (submitting || spinning) return;
 
         if (locationRequired && !locationVerified) {
             await verifyLocation();
             return;
         }
 
+        rejectedWhileBusy = false;
         submitting = true;
-        const queue = eligibility.queue || {};
-        const shouldJoin = !queue.queued && (eligibility.spin_in_progress || Number(queue.count || 0) > 0);
-        setHint(shouldJoin ? 'Please wait…' : 'Preparing your spin…');
+        setHint('Preparing your spin…');
         renderState();
-
-        if (shouldJoin) {
-            let response;
-            try {
-                response = await post(config.routes.queue);
-            } catch (_) {
-                submitting = false;
-                renderState();
-                showErrorModal({
-                    title: 'Connection problem',
-                    message: 'We could not join the spin queue. Check your connection and try again.',
-                    retry: onSpinClick,
-                });
-                return;
-            }
-
-            const { status, data } = response;
-            submitting = false;
-            if (status === 202 && data.queued) {
-                eligibility.queue = data.queue;
-                eligibility.spin_in_progress = true;
-                eligibility.can_start = false;
-                renderState();
-                return;
-            }
-
-            if (applyExpectedEligibilityFailure(data)) return;
-
-            if (status === 409 && data.reason === 'spin_available') {
-                await refreshEligibility();
-                return;
-            }
-
-            setHint(data.message || 'Unable to spin right now.');
-            renderState();
-            showErrorModal({
-                title: 'Could not join the queue',
-                message: data.message || 'The spin queue is unavailable right now. Please try again.',
-                retry: onSpinClick,
-            });
-            return;
-        }
-
-        // This must run inside the final tap gesture for mobile audio.
-        await controller.audio.unlock();
 
         let response;
         try {
@@ -519,25 +419,18 @@ export function initPlayerPage() {
         if (status === 200 && data.ok && data.spin) {
             mySpinId = data.spin.spin_session_id;
             spinning = true;
-            eligibility.spin_in_progress = true;
-            eligibility.queue = { queued: false, position: null, ahead: 0 };
             setHint('Good luck!');
             renderState();
-            controller.run(data.spin, {
-                onSegment: showSegment,
-                onComplete: async () => {
-                    spinning = false;
-                    await completeMySpin(data.spin);
-                    renderState();
-                },
+            runSpin(data.spin, async () => {
+                spinning = false;
+                await completeMySpin(data.spin);
+                renderState();
             });
             return;
         }
 
-        if (status === 202 && data.queued) {
-            eligibility.queue = data.queue;
-            eligibility.spin_in_progress = true;
-            eligibility.can_start = false;
+        if (data.reason === 'spin_in_progress') {
+            rejectedWhileBusy = true;
             renderState();
             return;
         }
@@ -576,11 +469,6 @@ export function initPlayerPage() {
 
     button?.addEventListener('click', onSpinClick);
 
-    document.getElementById('turn-modal-dismiss')?.addEventListener('click', () => {
-        turnAcknowledged = true;
-        hideModal(turnModal);
-    });
-
     errorModalClose?.addEventListener('click', () => {
         closeErrorModal();
         renderState();
@@ -599,57 +487,23 @@ export function initPlayerPage() {
         }
     });
 
-    subscribeToSpins({
-        onStarted: (payload) => {
-            if (payload.spin_session_id === mySpinId) return;
-            eligibility.spin_in_progress = true;
-            spinning = true;
-            setHint(`${payload.player_display || 'Another player'} is spinning…`);
-            renderState();
-            controller.run(payload, {
-                onSegment: showSegment,
-                onComplete: () => {
-                    spinning = false;
-                    refreshEligibility();
-                },
-            });
-        },
-        onCompleted: (payload) => {
-            if (payload.spin_session_id === mySpinId) return;
-            spinning = false;
-            refreshEligibility();
-        },
-        onExpired: () => {
-            spinning = false;
-            refreshEligibility();
-        },
-        onQueueUpdated: refreshEligibility,
-    });
-
     const fetchActive = () => fetch(config.routes.active, { headers: { Accept: 'application/json' } })
         .then((response) => response.json())
         .catch(() => null);
 
     let mirroredSpinId = null;
     async function poll() {
-        if (mySpinId && spinning) return;
+        if (spinning) return;
+        await refreshEligibility();
         const active = await fetchActive();
+        if (spinning) return;
         if (active?.active && active.spin && active.spin.spin_session_id !== mySpinId) {
-            eligibility.spin_in_progress = true;
             if (mirroredSpinId !== active.spin.spin_session_id) {
                 mirroredSpinId = active.spin.spin_session_id;
-                spinning = true;
-                controller.run(active.spin, {
-                    onSegment: showSegment,
-                    onComplete: () => {
-                        spinning = false;
-                        refreshEligibility();
-                    },
-                });
+                runSpin(active.spin, refreshEligibility);
             }
         } else {
             mirroredSpinId = null;
-            await refreshEligibility();
         }
         renderState();
     }

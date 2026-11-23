@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Restricts access to the limited staff surface (dashboard, spin history,
- * voucher redemption) to authenticated users flagged as staff OR admin.
+ * Gives authenticated staff and admins access to the dashboard and spin history.
  * Admins are always a superset of staff — see User::canAccessStaffTools().
  * Sensitive admin pages stay behind the stricter `admin` middleware.
  */

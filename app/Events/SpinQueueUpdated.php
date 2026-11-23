@@ -2,30 +2,18 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class SpinQueueUpdated implements ShouldBroadcast
+// shortcut: Legacy queued broadcasts are ignored. Remove once the old jobs have drained.
+class SpinQueueUpdated
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use InteractsWithSockets, SerializesModels;
 
     public function __construct(public array $payload) {}
 
     public function broadcastOn(): array
     {
-        return [new Channel('spin-stage')];
-    }
-
-    public function broadcastAs(): string
-    {
-        return 'spin.queue-updated';
-    }
-
-    public function broadcastWith(): array
-    {
-        return $this->payload;
+        return [];
     }
 }

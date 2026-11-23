@@ -65,38 +65,18 @@ class PlayerRegistrationTest extends TestCase
             ->assertRedirect(route('player.register'));
     }
 
-    public function test_desktop_devices_are_blocked_from_all_player_pages(): void
+    public function test_desktop_devices_can_access_player_pages(): void
     {
-        $desktop = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36';
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36');
 
-        $this->withHeader('User-Agent', $desktop)
-            ->get(route('home'))
-            ->assertForbidden()
-            ->assertViewIs('desktop-blocked');
+        $this->get(route('home'))->assertOk();
+        $this->get(route('player.register'))->assertOk();
 
-        $this->withHeader('User-Agent', $desktop)
-            ->get(route('live-view'))
-            ->assertForbidden()
-            ->assertViewIs('desktop-blocked');
-
-        $this->withHeader('User-Agent', $desktop)
-            ->get(route('live-view', ['mobile_device' => 1]))
-            ->assertForbidden()
-            ->assertViewIs('desktop-blocked');
-
-        $this->withHeader('User-Agent', $desktop)
-            ->get(route('player.register'))
-            ->assertForbidden()
-            ->assertViewIs('desktop-blocked');
-
-        $this->withHeader('User-Agent', $desktop)
-            ->post(route('player.logout'))
-            ->assertForbidden()
-            ->assertViewIs('desktop-blocked');
-
-        $this->withHeader('User-Agent', $desktop)
-            ->getJson(route('spin.eligibility'))
-            ->assertForbidden();
+        $this->withSession(['otp_email' => 'player@example.com'])
+            ->get(route('player.verify-otp'))
+            ->assertOk();
+        $this->post(route('player.logout'))->assertRedirect(route('home'));
+        $this->getJson(route('spin.eligibility'))->assertUnauthorized();
     }
 
     public function test_tablets_can_access_player_pages(): void

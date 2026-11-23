@@ -10,6 +10,7 @@ class EnsureMobilePlayerDevice
 {
     public function handle(Request $request, Closure $next): Response
     {
+        /* Mobile-only access is currently disabled.
         $agent = (string) $request->userAgent();
 
         // Empty agents are allowed for health checks and framework tests.
@@ -20,6 +21,7 @@ class EnsureMobilePlayerDevice
         if (! $mobileOrTablet) {
             return response()->view('desktop-blocked', status: 403);
         }
+        */
 
         return $next($request);
     }

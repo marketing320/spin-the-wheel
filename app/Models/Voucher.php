@@ -146,8 +146,7 @@ class Voucher extends Model
     |--------------------------------------------------------------------------
     | Status scopes
     |--------------------------------------------------------------------------
-    | Single source of truth for the /admin/vouchers tabs, counts, CSV export,
-    | and rotation eligibility. `redeemed_at` wins over the `status` column
+    | Status filters and rotation eligibility. `redeemed_at` wins over the `status` column
     | throughout, and the four scopes are mutually exclusive.
     */
 

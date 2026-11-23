@@ -91,7 +91,7 @@
                 <div>
                     <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-600">Celebration image confetti</h3>
                     <p class="mt-0.5 text-xs text-slate-500">
-                        Rain your own uploaded image on every win, on top of the normal confetti (player result + live-view).
+                        Add an uploaded image to the confetti on the player's result screen.
                     </p>
                 </div>
 

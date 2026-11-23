@@ -9,7 +9,7 @@
     <x-head-fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="antialiased">
+<body class="admin-surface antialiased">
     <div class="flex min-h-screen items-center justify-center bg-slate-50 px-5">
         {{ $slot }}
     </div>

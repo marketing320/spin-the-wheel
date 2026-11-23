@@ -4,16 +4,11 @@
     // items marked false here — matches the route split in routes/admin.php.
     $nav = [
         ['admin.dashboard', 'Dashboard', 'layout-dashboard', false],
-        ['admin.redeem', 'Redeem Voucher', 'scan-line', false],
-        ['admin.vouchers', 'Vouchers', 'ticket', false],
         ['admin.campaigns', 'Campaigns', 'target', true],
         ['admin.prizes', 'Prizes', 'gift', true],
-        ['admin.wheel', 'Wheel Design', 'ferris-wheel', true],
         ['admin.play-rules', 'Play Rules', 'repeat', true],
         ['admin.forms', 'Form Builder', 'clipboard-list', true],
         ['admin.geofence', 'Geofence', 'map-pin', true],
-        ['admin.live-view', 'Live View', 'tv', true],
-        ['admin.front-view', 'Front View Banner', 'image', true],
         ['admin.spins', 'Spin History', 'history', false],
         ['admin.players', 'Players', 'users', true],
         ['admin.users', 'Users', 'user-cog', true],
@@ -32,7 +27,7 @@
     <x-head-fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="antialiased">
+<body class="admin-surface antialiased">
 <div x-data="{ open: false }" class="flex min-h-screen bg-slate-50">
     {{-- Sidebar --}}
     <aside :class="open ? 'translate-x-0' : '-translate-x-full'"

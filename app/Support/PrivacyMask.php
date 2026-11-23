@@ -6,11 +6,6 @@ namespace App\Support;
  * Masks a raw string for display to staff during voucher redemption: the
  * first three characters stay visible, everything after is replaced with
  * asterisks (one asterisk per remaining character, spaces included).
- *
- * Distinct from Player::maskedEmail() (which keeps the domain readable for
- * the public live-view screen) — this is a stricter mask for a different
- * audience (cashiers looking up a stranger's booking), so it hides the whole
- * remainder of the string rather than just the local-part of an email.
  */
 class PrivacyMask
 {

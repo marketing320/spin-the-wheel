@@ -48,9 +48,9 @@ class PlayRules extends Component
     {
         return [
             'rule_type' => ['required', Rule::in(PlayRule::TYPES)],
-            'cooldown_hours' => 'nullable|integer|min:1',
-            'max_spins_per_campaign' => 'nullable|integer|min:1',
-            'max_spins_per_day' => 'nullable|integer|min:1',
+            'cooldown_hours' => 'required_if:rule_type,every_x_hours|nullable|integer|min:1',
+            'max_spins_per_campaign' => 'required_if:rule_type,max_per_campaign|nullable|integer|min:1',
+            'max_spins_per_day' => 'required_if:rule_type,max_per_day|nullable|integer|min:1',
             'is_active' => 'boolean',
         ];
     }

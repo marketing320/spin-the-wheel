@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\LandingController;
-use App\Http\Controllers\LiveViewController;
 use App\Http\Controllers\PlayerAuthController;
 use App\Http\Controllers\SpinActionController;
 use App\Http\Controllers\SpinController;
@@ -19,19 +18,6 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', [LandingController::class, 'index'])
     ->middleware('player.mobile')->name('home');
-
-// Public winner leaderboard + live spin display endpoints.
-Route::get('/live-view', [LiveViewController::class, 'index'])
-    ->middleware('player.mobile')->name('live-view');
-Route::get('/live-view/leaderboard', [LiveViewController::class, 'leaderboardSnapshot'])->name('live-view.leaderboard');
-Route::get('/live-view/active-spin', [LiveViewController::class, 'active'])->name('live-view.active');
-
-// Portrait LED roadshow display — same data/realtime endpoint as /live-view.
-Route::get('/roadshow-live', [LiveViewController::class, 'roadshow'])->name('roadshow-live');
-
-// Same as /roadshow-live, but idle shows an admin-uploaded image slideshow
-// (full takeover) instead of the idle-spinning wheel.
-Route::get('/front-view', [LiveViewController::class, 'frontView'])->name('front-view');
 
 // Voucher code images — the code itself is the secret, so these render on
 // the fly without an auth gate (same pattern as a password-reset link).
@@ -69,8 +55,6 @@ Route::middleware(['player.mobile', 'player'])->group(function () {
         Route::prefix('spin')->name('spin.')->group(function () {
             Route::get('/api/eligibility', [SpinActionController::class, 'eligibility'])->name('eligibility');
             Route::post('/api/geofence-check', [SpinActionController::class, 'geofenceCheck'])->name('geofence');
-            Route::post('/api/queue', [SpinActionController::class, 'joinQueue'])
-                ->middleware('throttle:30,1')->name('queue');
             Route::post('/api/start', [SpinActionController::class, 'start'])
                 ->middleware('throttle:12,1')->name('start');
             Route::get('/api/active', [SpinActionController::class, 'active'])->name('active');

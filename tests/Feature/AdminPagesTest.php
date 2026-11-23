@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Livewire\Admin\Settings as AdminSettings;
-use App\Livewire\Admin\WheelDesign;
 use App\Models\Campaign;
 use App\Models\FormField;
 use App\Models\Prize;
@@ -35,13 +34,22 @@ class AdminPagesTest extends TestCase
         $this->actingAs($this->admin(), 'web');
 
         $routes = [
-            'admin.dashboard', 'admin.campaigns', 'admin.prizes', 'admin.wheel',
-            'admin.play-rules', 'admin.forms', 'admin.geofence', 'admin.live-view',
-            'admin.spins', 'admin.players', 'admin.settings', 'admin.redeem',
+            'admin.dashboard', 'admin.campaigns', 'admin.prizes',
+            'admin.play-rules', 'admin.forms', 'admin.geofence',
+            'admin.spins', 'admin.players', 'admin.settings',
         ];
 
         foreach ($routes as $name) {
             $this->get(route($name))->assertOk();
+        }
+    }
+
+    public function test_removed_admin_sections_are_unavailable(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+
+        foreach (['redeem', 'vouchers', 'vouchers/export', 'wheel', 'front-view'] as $path) {
+            $this->get('/admin/'.$path)->assertNotFound();
         }
     }
 
@@ -92,13 +100,13 @@ class AdminPagesTest extends TestCase
         $staff = User::factory()->create(['is_admin' => false, 'is_staff' => true]);
         $this->actingAs($staff, 'web');
 
-        foreach (['admin.dashboard', 'admin.spins', 'admin.redeem'] as $name) {
+        foreach (['admin.dashboard', 'admin.spins'] as $name) {
             $this->get(route($name))->assertOk();
         }
 
         foreach ([
-            'admin.campaigns', 'admin.prizes', 'admin.wheel', 'admin.play-rules',
-            'admin.forms', 'admin.geofence', 'admin.live-view', 'admin.players', 'admin.settings',
+            'admin.campaigns', 'admin.prizes', 'admin.play-rules',
+            'admin.forms', 'admin.geofence', 'admin.players', 'admin.settings',
         ] as $name) {
             $this->get(route($name))->assertForbidden();
         }
@@ -108,7 +116,7 @@ class AdminPagesTest extends TestCase
     {
         $this->actingAs(User::factory()->create(['is_admin' => false, 'is_staff' => false]), 'web');
 
-        $this->get(route('admin.redeem'))->assertForbidden();
+        $this->get(route('admin.spins'))->assertForbidden();
     }
 
     public function test_spins_csv_export_downloads(): void
@@ -151,17 +159,6 @@ class AdminPagesTest extends TestCase
         $this->get(route('admin.players.export', ['ids' => $players->take(2)->pluck('id')->implode(',')]))
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
-    }
-
-    public function test_wheel_design_duration_is_fixed_at_eight_seconds(): void
-    {
-        $this->actingAs($this->admin(), 'web');
-
-        Livewire::test(WheelDesign::class)
-            ->assertSet('animation_duration_ms', 8000)
-            ->set('animation_duration_ms', 11000)
-            ->call('save')
-            ->assertHasErrors(['animation_duration_ms']);
     }
 
     public function test_prize_can_be_marked_as_voucher_with_expiry_override(): void
@@ -215,12 +212,12 @@ class AdminPagesTest extends TestCase
         Livewire::test(\App\Livewire\Admin\Prizes::class)
             ->call('create')
             ->set('name', 'Small Gift')
-            ->set('segment_count', 3)
+            ->set('segment_count', 15)
             ->call('save')
             ->assertHasNoErrors();
 
         $prize = Prize::where('name', 'Small Gift')->first();
-        $this->assertSame(3, $prize->segment_count);
+        $this->assertSame(15, $prize->segment_count);
     }
 
     public function test_segment_count_must_be_at_least_one(): void

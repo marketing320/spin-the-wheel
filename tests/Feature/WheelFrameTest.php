@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Campaign;
 use App\Models\Player;
 use App\Models\Prize;
-use App\Services\WheelAnimationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +14,7 @@ class WheelFrameTest extends TestCase
 
     private const MOBILE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile';
 
-    public function test_player_wheel_uses_the_stationary_ring_frame_without_an_outer_bezel(): void
+    public function test_player_wheel_uses_the_event_frame(): void
     {
         $campaign = Campaign::factory()->create();
         $player = Player::factory()->create();
@@ -25,48 +24,19 @@ class WheelFrameTest extends TestCase
             ->withHeader('User-Agent', self::MOBILE_UA)
             ->get(route('spin'));
 
-        $this->assertFramedWheel($response->getContent());
+        $response->assertOk()
+            ->assertSee('<body class="player-surface event-theme antialiased spin-event"', false)
+            ->assertSee('id="wheel-stage" data-wheel-theme="event"', false)
+            ->assertSee('class="spin-event-rim"', false)
+            ->assertSee('id="wheel-pointer" class="spin-event-pointer"', false);
     }
 
-    public function test_public_live_wheel_layouts_use_the_same_stationary_frame_layers(): void
+    public function test_event_theme_applies_to_public_layouts_and_stays_out_of_admin(): void
     {
-        $campaign = Campaign::factory()->create();
-        Prize::factory()->for($campaign)->create();
+        foreach (['home', 'player.register'] as $route) {
+            $this->get(route($route))->assertOk()->assertSee('event-theme', false);
+        }
 
-        $this->assertFramedWheel($this->get(route('front-view'))->getContent());
-        $this->assertFramedWheel($this->get(route('roadshow-live'))->getContent());
-
-        $segments = app(WheelAnimationService::class)->segments($campaign);
-        $desktopLiveView = $this->view('live-view', [
-            'campaign' => $campaign,
-            'segments' => $segments,
-            'settings' => [
-                'idle_message' => '',
-                'branding' => '',
-                'auto_reset_seconds' => 12,
-                'cta_enabled' => false,
-                'cta_message' => '',
-                'cta_color' => 'sun',
-            ],
-            'queue' => ['count' => 0, 'players' => []],
-        ]);
-
-        $this->assertFramedWheel((string) $desktopLiveView);
-    }
-
-    private function assertFramedWheel(string $html): void
-    {
-        $this->assertStringContainsString(asset('img/ring_frame.png'), $html);
-        $this->assertStringContainsString('absolute inset-0 z-0 overflow-hidden rounded-full', $html);
-        $this->assertStringContainsString('z-30 -translate-x-1/2', $html);
-        $this->assertStringContainsString('absolute inset-0 z-10 h-full w-full', $html);
-        $this->assertSame(1, substr_count($html, asset('img/ring_frame.png')));
-
-        preg_match('/id="wheel-stage" class="([^"]+)"/', $html, $stage);
-        $this->assertStringNotContainsString('bg-white', $stage[1] ?? '');
-
-        preg_match('/id="(?:wheel-pointer|live-wheel-pointer)" class="([^"]+)"/', $html, $pointer);
-        $this->assertMatchesRegularExpression('/top-\[-(?:28|36|38)\.3px\]/', $pointer[1] ?? '');
-        $this->assertStringNotContainsString('translate-y', $pointer[1] ?? '');
+        $this->get(route('admin.login'))->assertOk()->assertDontSee('event-theme', false);
     }
 }

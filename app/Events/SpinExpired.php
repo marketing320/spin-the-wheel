@@ -2,15 +2,12 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class SpinExpired implements ShouldBroadcast
+// shortcut: Legacy queued broadcasts are ignored. Remove once the old jobs have drained.
+class SpinExpired
 {
-    use Dispatchable;
     use InteractsWithSockets;
     use SerializesModels;
 
@@ -19,27 +16,8 @@ class SpinExpired implements ShouldBroadcast
         public string $reason = 'expired',
     ) {}
 
-    /**
-     * @return array<int, Channel>
-     */
     public function broadcastOn(): array
     {
-        return [new Channel('spin-stage')];
-    }
-
-    public function broadcastAs(): string
-    {
-        return 'spin.expired';
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function broadcastWith(): array
-    {
-        return [
-            'spin_session_id' => $this->spinSessionId,
-            'reason' => $this->reason,
-        ];
+        return [];
     }
 }

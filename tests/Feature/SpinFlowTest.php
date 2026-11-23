@@ -211,20 +211,20 @@ class SpinFlowTest extends TestCase
         $this->assertSame(SpinSession::STATUS_ACTIVE, $session->status);
     }
 
-    public function test_live_view_can_fetch_the_active_spin(): void
+    public function test_player_can_fetch_the_active_spin(): void
     {
         $session = $this->spins->start($this->readyPlayer());
 
-        $response = $this->getJson(route('live-view.active'));
+        $response = $this->actingAs($this->readyPlayer(), 'player')->getJson(route('spin.active'));
 
         $response->assertOk()
             ->assertJsonPath('active', true)
             ->assertJsonPath('spin.spin_session_id', $session->id);
     }
 
-    public function test_live_view_reports_idle_when_no_active_spin(): void
+    public function test_player_active_spin_endpoint_reports_idle(): void
     {
-        $this->getJson(route('live-view.active'))
+        $this->actingAs($this->readyPlayer(), 'player')->getJson(route('spin.active'))
             ->assertOk()
             ->assertJsonPath('active', false);
     }

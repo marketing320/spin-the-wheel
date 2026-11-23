@@ -1,17 +1,14 @@
-<x-layouts.app title="Spin the Wheel" js-entry="resources/js/spin/spin-page.js">
+<x-layouts.app title="Spin the Wheel" js-entry="resources/js/spin/spin-page.js" theme="spin-event">
     @php
         $config = [
             'csrf' => csrf_token(),
             'segments' => $segments,
             'geofenceEnabled' => $geofenceEnabled,
             'eligibility' => $eligibility,
-            'spinInProgress' => $spinInProgress,
-            'queue' => $queue,
             'soundUrl' => asset('sfx/spinning-wheel2.mp3'),
             'routes' => [
                 'eligibility' => route('spin.eligibility'),
                 'geofence' => route('spin.geofence'),
-                'queue' => route('spin.queue'),
                 'start' => route('spin.start'),
                 'active' => route('spin.active'),
                 'complete' => route('spin.complete', ['spin' => 'SPIN_ID']),
@@ -22,9 +19,14 @@
 
     <script type="application/json" id="spin-config">{!! json_encode($config) !!}</script>
 
-    <div class="flex w-full max-w-lg flex-col items-center" data-spin-root>
+    <div class="spin-event-layout" data-spin-root>
+        <div class="spin-event-intro">
+            <p class="event-partners">Brightstar × NVIDIA</p>
+            <h1>Spin the wheel</h1>
+        </div>
+
         {{-- Status banner --}}
-        <div id="status-banner" class="mb-3 w-full text-center">
+        <div id="status-banner" role="status">
             @unless ($eligibility['eligible'])
                 <div class="rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-base font-bold text-amber-800">
                     {{ $eligibility['message'] }}
@@ -33,46 +35,34 @@
         </div>
 
         {{-- Live prize display — updates to whatever is under the pointer --}}
-        <div id="pointer-prize" class="mb-4 flex w-full max-w-sm items-center justify-center gap-3 rounded-2xl border-[3px] border-slate-900 bg-white px-4 py-3 pixel-shadow">
-            <span id="pointer-prize-chip" class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg border-2 border-slate-900" style="background:#0e75bc">
+        <div id="pointer-prize" class="spin-event-prize">
+            <span id="pointer-prize-chip" class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md">
                 <img id="pointer-prize-image" src="" alt="" class="hidden h-full w-full object-cover">
-                <i id="pointer-prize-icon" data-lucide="gift" class="h-6 w-6 text-white"></i>
+                <i id="pointer-prize-icon" data-lucide="gift" class="h-5 w-5" aria-hidden="true"></i>
             </span>
-            <span id="pointer-prize-name" class="font-display text-lg font-bold leading-tight text-slate-900">—</span>
-        </div>
-
-        {{-- Wheel stage — dominant, near full-width on mobile --}}
-        <div class="relative isolate mx-auto mt-6 aspect-square w-[min(96vw,34rem)]">
-            {{-- Pointer (points down into the wheel) --}}
-            <div id="wheel-pointer" class="absolute left-1/2 top-[-36.3px] z-30 -translate-x-1/2 origin-top">
-                <div class="h-0 w-0 border-l-[20px] border-r-[20px] border-t-[36px] border-l-transparent border-r-transparent border-t-cherry-500 drop-shadow-[3px_3px_0_rgba(15,23,42,1)]"></div>
-            </div>
-            {{-- The wheel extends beneath the decorative frame so no bezel is
-                 visible; the light ring stays fixed while the face rotates. --}}
-            <div id="wheel-stage" class="absolute inset-0 z-0 overflow-hidden rounded-full"></div>
-            <img src="{{ asset('img/ring_frame.png') }}" alt="" aria-hidden="true" draggable="false"
-                 class="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain pixelated">
-            {{-- Center hub --}}
-            <div class="pointer-events-none absolute left-1/2 top-1/2 z-20 grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-slate-900 bg-white pixel-shadow">
-                <img src="{{ asset('logo-black.png') }}" alt="Logo" class="h-15 w-15 object-contain">
+            <div class="min-w-0">
+                <p class="spin-event-prize-caption">At the pointer</p>
+                <p id="pointer-prize-name">{{ $segments[0]['label'] ?? 'No prizes available' }}</p>
             </div>
         </div>
 
-        {{-- Spin button --}}
-        <button id="spin-button"
-                class="pressable-control btn-primary mt-6 w-full py-4 text-xl @if ($eligibility['eligible'] && ! $spinInProgress) animate-pulse-glow @endif"
-                @unless ($eligibility['eligible']) disabled @endunless>
-            <span data-label-idle class="inline-flex items-center gap-2"><i data-lucide="sparkles" class="h-6 w-6"></i> <span data-label-idle-text>SPIN!</span></span>
-            <span data-label-spinning class="hidden">Spinning…</span>
-        </button>
+        <x-event-wheel pointer-id="wheel-pointer" />
+        @if ($segments)
+            <ul class="sr-only" aria-label="Wheel prizes">
+                @foreach (array_unique(array_column($segments, 'label')) as $label)
+                    <li>{{ $label }}</li>
+                @endforeach
+            </ul>
+        @endif
 
-        <p id="spin-hint" class="mt-3 min-h-6 text-center text-sm font-bold text-slate-600">
-            @if ($queue['queued'])
-                There are {{ $queue['ahead'] }} people in front of you. Please wait…
-            @elseif ($spinInProgress)
-                Another player is spinning…
-            @endif
-        </p>
+        <div class="spin-event-action">
+            <button id="spin-button" type="button" class="btn-primary"
+                    @disabled(! $eligibility['eligible'])>
+                <span data-label-idle class="items-center gap-2"><i data-lucide="rotate-cw" class="h-5 w-5" aria-hidden="true"></i> Spin the wheel</span>
+                <span data-label-spinning class="hidden">Spinning…</span>
+            </button>
+            <p id="spin-hint" role="status"></p>
+        </div>
     </div>
 
     {{-- Location verification modal — shown immediately when the active
@@ -97,9 +87,9 @@
             <p id="location-modal-message" class="mt-3 text-sm text-slate-600">Please allow location access while we confirm that you’re at the event.</p>
 
             <div class="mt-5 flex items-end justify-center gap-2" aria-hidden="true">
-                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-brand-500"></span>
-                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-brand-500"></span>
-                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-brand-500"></span>
+                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-[var(--event-green)]"></span>
+                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-[var(--event-green)]"></span>
+                <span class="location-loading-dot h-2.5 w-2.5 rounded-full bg-[var(--event-green)]"></span>
             </div>
             <span class="sr-only" role="status" aria-live="polite">Checking your current location.</span>
         </div>
@@ -115,7 +105,7 @@
          aria-hidden="true"
          class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/50 p-5 backdrop-blur-sm">
         <div class="card w-full max-w-sm text-center" tabindex="-1">
-            <span class="mx-auto grid h-14 w-14 place-items-center rounded-full border-[3px] border-slate-900 bg-cherry-50 text-cherry-600 pixel-shadow">
+            <span class="event-icon mx-auto grid h-14 w-14 place-items-center rounded-lg">
                 <i data-lucide="triangle-alert" class="h-7 w-7"></i>
             </span>
             <div id="error-modal-title" class="mt-5 font-display text-lg font-bold text-slate-900">Something went wrong</div>
@@ -137,7 +127,6 @@
             <img id="result-prize-image" src="" alt="" class="mx-auto mt-4 hidden h-32 w-32 rounded-2xl border-2 border-slate-900 object-cover">
             <div id="result-prize-name" class="mt-3 font-display text-2xl font-bold leading-tight text-slate-900 [word-break:break-word]">—</div>
             <div id="result-rarity" class="mt-3 flex justify-center"></div>
-            <p id="result-message" class="mt-4 text-sm text-slate-600"></p>
 
             {{-- Voucher prizes only: code + QR/barcode + a live countdown to expiry. --}}
             <div id="result-voucher" class="mt-4 hidden rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
@@ -152,32 +141,6 @@
             </div>
 
             <a id="result-link" href="#" class="btn-primary mt-6 w-full">View prize →</a>
-        </div>
-    </div>
-
-    {{-- Queue modal — shown while queued and it isn't the player's turn yet,
-         so the disabled Spin button + small hint text below it aren't the
-         only signal that something happened. Stays open (no close button)
-         until it becomes their turn. --}}
-    <div id="queue-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-5 backdrop-blur">
-        <div class="card w-full max-w-sm text-center">
-            <i data-lucide="loader-2" class="mx-auto h-10 w-10 animate-spin text-brand-500"></i>
-            <div class="mt-4 font-display text-lg font-bold text-slate-900">You're in the queue!</div>
-            <p class="mt-2 text-sm text-slate-600">Only one player can spin the wheel at a time, so we've saved your place in line.</p>
-            <div id="queue-modal-position" class="mt-4 rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3 font-display text-sm font-bold text-brand-700">—</div>
-            <p class="mt-3 text-xs text-slate-500">This page updates automatically — no need to refresh.</p>
-        </div>
-    </div>
-
-    {{-- Turn modal — announces it's the player's turn, since they may have
-         looked away while queued. Requires a tap to dismiss before the Spin
-         button underneath becomes reachable. --}}
-    <div id="turn-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-5 backdrop-blur">
-        <div class="card w-full max-w-sm text-center">
-            <i data-lucide="sparkles" class="mx-auto h-10 w-10 text-cherry-500"></i>
-            <div class="mt-4 font-display text-lg font-bold text-slate-900">It's your turn!</div>
-            <p class="mt-2 text-sm text-slate-600">Tap below, then hit SPIN to try your luck.</p>
-            <button id="turn-modal-dismiss" type="button" class="btn-primary mt-5 w-full">Let's go!</button>
         </div>
     </div>
 </x-layouts.app>

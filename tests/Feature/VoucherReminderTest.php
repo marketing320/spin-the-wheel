@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Livewire\Admin\Prizes;
-use App\Livewire\Admin\RedeemVoucher;
 use App\Models\Campaign;
 use App\Models\Player;
 use App\Models\Prize;
@@ -52,7 +51,7 @@ class VoucherReminderTest extends TestCase
         $this->assertSame($message, $voucher->fresh()->staff_redemption_reminder);
     }
 
-    public function test_staff_and_admin_receive_an_informational_warning_and_can_still_redeem(): void
+    public function test_a_reminder_does_not_prevent_redemption(): void
     {
         $message = 'Minimum spend RM50 applies.';
         $users = [
@@ -63,17 +62,7 @@ class VoucherReminderTest extends TestCase
         foreach ($users as $user) {
             [, $voucher] = $this->makeVoucher($message);
 
-            Livewire::actingAs($user)
-                ->test(RedeemVoucher::class)
-                ->set('codeInput', $voucher->code)
-                ->call('lookup')
-                ->assertSet('pending.staff_redemption_reminder', $message)
-                ->assertDispatched(
-                    'voucher-reminder',
-                    title: 'Staff redemption reminder',
-                    message: $message,
-                )
-                ->call('confirmRedeem');
+            app(VoucherService::class)->redeem($voucher, $user);
 
             $voucher->refresh();
             $this->assertSame(Voucher::STATUS_REDEEMED, $voucher->status);
@@ -106,7 +95,7 @@ class VoucherReminderTest extends TestCase
             $sweetAlertConfirmations += preg_match_all('/\bdata-swal-confirm=/', $contents);
         }
 
-        $this->assertSame(11, $sweetAlertConfirmations);
+        $this->assertSame(7, $sweetAlertConfirmations);
     }
 
     /** @return array{Prize, Voucher} */
