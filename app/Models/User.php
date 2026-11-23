@@ -12,8 +12,7 @@ use Illuminate\Notifications\Notifiable;
 
 /**
  * Admin / back-office user. The `is_admin` flag gates the full admin panel;
- * `is_staff` gates only the limited staff surface (dashboard, spin history,
- * voucher redemption) — see EnsureAdmin / EnsureStaffAccess middleware.
+ * `is_staff` grants access to the dashboard and spin history through EnsureStaffAccess.
  */
 #[Fillable(['name', 'email', 'password', 'is_admin', 'is_staff'])]
 #[Hidden(['password', 'remember_token'])]

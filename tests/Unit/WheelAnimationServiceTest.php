@@ -47,16 +47,23 @@ class WheelAnimationServiceTest extends TestCase
     public function test_multi_segment_slots_are_spread_around_the_wheel_not_clustered(): void
     {
         $campaign = Campaign::factory()->create();
-        $a = Prize::factory()->for($campaign)->create(['name' => 'A', 'segment_count' => 3]);
-        $b = Prize::factory()->for($campaign)->create(['name' => 'B', 'segment_count' => 1]);
-        $c = Prize::factory()->for($campaign)->create(['name' => 'C', 'segment_count' => 2]);
+        $rm50 = Prize::factory()->for($campaign)->create(['name' => 'RM50 Voucher', 'segment_count' => 15]);
+        $rm70 = Prize::factory()->for($campaign)->create(['name' => 'RM70 Voucher', 'segment_count' => 9]);
+        $rm100 = Prize::factory()->for($campaign)->create(['name' => 'RM100 Voucher', 'segment_count' => 3]);
 
-        $segments = $this->service->segments($campaign, collect([$a, $b, $c]));
-
-        // Round-robin: A, B, C, A, C, A — A's copies land at 0, 3, 5, never adjacent.
-        $this->assertCount(6, $segments);
+        $segments = $this->service->segments($campaign);
         $prizeIds = array_column($segments, 'prize_id');
-        $this->assertSame([$a->id, $b->id, $c->id, $a->id, $c->id, $a->id], $prizeIds);
+
+        $this->assertCount(27, $segments);
+        $this->assertCount(15, array_keys($prizeIds, $rm50->id, true));
+        $this->assertSame(range(0, 26), array_column($segments, 'index'));
+        foreach ([$rm70->id => 3, $rm100->id => 9] as $prizeId => $gap) {
+            $indexes = array_keys($prizeIds, $prizeId, true);
+            $this->assertNotEmpty($indexes);
+            $this->assertSame(range($indexes[0], 26, $gap), $indexes);
+            $this->assertCount(intdiv(27, $gap), $indexes);
+        }
+        $this->assertSame($segments, $this->service->segments($campaign, collect([$rm100, $rm70, $rm50])));
     }
 
     public function test_index_of_prize_picks_one_of_several_matching_slots(): void

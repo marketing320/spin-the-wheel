@@ -1,4 +1,3 @@
-import '../echo';
 import { initPlayerPage } from './player-sync';
 
 /**

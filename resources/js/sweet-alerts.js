@@ -89,8 +89,3 @@ document.addEventListener('click', async (event) => {
         trigger.click();
     }
 }, true);
-
-window.addEventListener('voucher-reminder', (event) => {
-    const detail = event.detail || {};
-    if (detail.message) warning(detail.message, detail.title || 'Staff redemption reminder');
-});

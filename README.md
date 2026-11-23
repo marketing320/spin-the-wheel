@@ -2,8 +2,7 @@
 
 An admin-configurable **Spin The Wheel** prize game built on **Laravel 13 + Livewire 4**.
 A player registers with their email, verifies an OTP, completes a dynamic form, and spins a
-premium 3D wheel on their phone — while the exact same spin is mirrored in real time on a public
-`/live-view` event screen.
+premium 3D wheel on their phone.
 
 Built for correctness first: prizes are chosen **server-side**, only **one player can spin at a
 time globally**, and eligibility/geofence are validated on the backend.
@@ -22,12 +21,11 @@ time globally**, and eligibility/geofence are validated on the backend.
 - **Play-frequency rules** — once per campaign / per day, every X hours, max per campaign/day,
   keyed on the player's email identity.
 - **Geofence** — server-side Haversine validation with private audit logs.
-- **Realtime sync** — Laravel Reverb broadcasting drives identical animation on the phone and the
-  live-view screen from one server payload; late-joining screens resync to the elapsed position.
+- **Spin status** — player pages check for active spins and eligibility every three seconds.
 - **3D animation** — Three.js wheel (with a 2D canvas fallback) + `canvas-confetti` celebrations
   scaled by prize rarity.
-- **Full admin panel** — dashboard, campaigns, prizes, wheel design, play rules, form builder,
-  geofence, live-view settings, spin history (CSV export), players, and global settings.
+- **Admin panel** — dashboard, campaigns, prizes, play rules, form builder, geofence,
+  spin history (CSV export), players, users, and global settings.
 
 ---
 
@@ -53,8 +51,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Edit `.env` and set your database + mail credentials. Reverb credentials are pre-scaffolded;
-generate fresh ones any time with `php artisan reverb:install`.
+Edit `.env` and set your database and mail credentials.
 
 ```bash
 # 3. Create the database (MySQL), then migrate + seed demo data
@@ -69,17 +66,10 @@ npm run build      # or: npm run dev  (during development)
 
 ### Running
 
-You need up to three processes:
-
 ```bash
 php artisan serve          # the web app          -> http://localhost:8000
-php artisan reverb:start   # the websocket server -> realtime sync
-php artisan queue:work     # queue worker         -> broadcasts + failsafe spin completion
+php artisan queue:work     # queue worker for failsafe spin completion and lock release
 ```
-
-> Realtime + the failsafe completion job need the queue worker and Reverb running. The player page
-> still works without them (it animates from the HTTP response), and `/live-view` falls back to
-> polling if Reverb is offline.
 
 ### Deploying behind HTTPS (reverse proxy)
 
@@ -92,33 +82,13 @@ APP_URL=https://your-domain.com     # forces https URLs → no "mixed content" /
 Then `php artisan config:clear` (or re-run `config:cache`). The app already trusts proxy headers
 (`X-Forwarded-Proto`) so it detects HTTPS automatically.
 
-**WebSockets:** the browser connects to `wss://your-domain.com/app/...`; your proxy must forward
-the `/app` path (with WebSocket upgrade) to the Reverb server on `127.0.0.1:8080`. Example nginx:
-
-```nginx
-location /app {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "Upgrade";
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-```
-
-The bundled `echo.js` auto-detects the domain + `wss:443` when the page is HTTPS, so **you do not
-need to rebuild** just to change the websocket host. (You may still set `VITE_REVERB_HOST` /
-`VITE_REVERB_PORT` / `VITE_REVERB_SCHEME` explicitly and rebuild if you run Reverb on a separate
-host/port.) Keep `php artisan reverb:start` and `php artisan queue:work` running.
-
 ---
 
 ## 🐳 Deploy to a VPS with Docker
 
 The project ships a production Docker setup: **nginx + php-fpm** serving the app on plain HTTP
 port **8005**, a **queue worker**, and **MySQL 8** — all in one `docker-compose.yaml`.
-Cache/session/queue use the database, so no Redis is needed. Realtime runs in polling mode
-(`BROADCAST_CONNECTION=log`), so no Reverb container is required.
+Cache, sessions, and queued jobs use the database.
 
 This is built for a **shared VPS running several projects behind its own nginx** (no Cloudflare
 Tunnel): the container's port 8005 is bound to `127.0.0.1` only — never exposed to the internet
@@ -176,7 +146,7 @@ other projects' site configs, just pointed at this app's port.
 | Service | Role |
 |---|---|
 | `app` | nginx + php-fpm on `127.0.0.1:8005` (plain HTTP, loopback-only) + migrations on start |
-| `queue` | `php artisan queue:work` — broadcasts + failsafe spin completion |
+| `queue` | `php artisan queue:work` — failsafe spin completion and lock release |
 | `db` | MySQL 8 (named volume `db-data`) |
 
 **Persistent data** lives in named volumes: `db-data` (database) and `storage-app` (uploaded
@@ -196,10 +166,6 @@ If port 8005 collides with another project on the box, change **both** sides: th
 mapping for the `app` service in `docker-compose.yaml` (e.g. `"127.0.0.1:8006:8005"`, keeping the
 `127.0.0.1:` prefix) **and** the `proxy_pass` port in the host nginx vhost to match.
 
-> To switch on true websockets later: run a Reverb container/command, set
-> `BROADCAST_CONNECTION=reverb` + `VITE_REVERB_ENABLED=true` (rebuild), and add the websocket
-> `location /app { ... }` block to the host vhost pointed at the Reverb port.
-
 ---
 
 ## 🔑 Demo accounts & routes
@@ -208,7 +174,6 @@ After seeding:
 
 - **Admin panel:** <http://localhost:8000/admin> — `admin@example.com` / `password`
 - **Player game:** <http://localhost:8000/>
-- **Live screen:** <http://localhost:8000/live-view>
 
 The seeder creates an active *"Grand Launch Giveaway"* campaign with five prizes (Common →
 Legendary), a demo registration form, a once-per-day play rule, and a disabled geofence.
@@ -234,14 +199,11 @@ Legendary), a demo registration form, a once-per-day play rule, and a disabled g
 | `SpinLockService` | Global single-spin guard + stale-lock expiry |
 | `GeofenceService` | Haversine distance validation + audit logging |
 | `WheelAnimationService` | Deterministic segment layout + final-angle math |
-| `SpinService` | Orchestrates the full spin lifecycle + broadcasting |
+| `SpinService` | Orchestrates the spin lifecycle |
 
-**Realtime** — `SpinStarted`, `SpinCompleted`, `SpinExpired` broadcast on the public `spin-stage`
-channel. The frontend modules live in `resources/js/spin/` (`wheel-scene`, `spin-controller`,
-`confetti-controller`, `live-sync`, `player-sync`) and are driven by one shared server payload so
-both screens animate identically.
+The player page polls the authenticated spin endpoints in `resources/js/spin/player-sync.js`.
 
-**Runtime settings** — most OTP/spin/branding/live-view options are editable in the admin panel and
+**Runtime settings** — most OTP/spin/branding options are editable in the admin panel and
 persisted in `app_settings` (see `App\Support\Settings`), falling back to `config/spin.php`.
 
 ---
@@ -254,7 +216,7 @@ php artisan test
 
 Covers the core rules: no spin without verification/form, play-rule blocking, geofence blocking,
 one-at-a-time locking, server-side & out-of-stock prize selection, OTP expiry/attempt limits,
-lock expiry, and the live-view active-spin fetch.
+lock expiry, and the player's active-spin endpoint.
 
 ---
 

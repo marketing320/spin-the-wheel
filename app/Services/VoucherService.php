@@ -14,9 +14,7 @@ use App\Support\Settings;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Generates and redeems vouchers for voucher-type prizes. Redemption always
- * happens on the staff side (App\Livewire\Admin\RedeemVoucher) after the
- * player has already won and been shown their code/QR/barcode.
+ * Generates vouchers for voucher-type prizes and records staff redemptions.
  */
 class VoucherService
 {

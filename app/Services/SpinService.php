@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Events\SpinCompleted;
-use App\Events\SpinStarted;
 use App\Exceptions\SpinException;
 use App\Jobs\CompleteSpinJob;
 use App\Jobs\ReleaseSpinJob;
@@ -18,9 +16,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Orchestrates the full spin lifecycle: eligibility → geofence → global lock →
- * server-side prize selection → animation payload → realtime broadcast, then
- * completion. All authoritative decisions happen here, never on the frontend.
+ * Checks eligibility and location, locks the wheel, selects the prize,
+ * and records the completed spin.
  */
 class SpinService
 {
@@ -74,10 +71,7 @@ class SpinService
         // 3. Acquire the global lock + select prize atomically.
         $session = $this->acquireAndDecide($campaign, $player, $context);
 
-        // 4. Broadcast to player + live-view.
-        broadcast(new SpinStarted($this->buildStartedPayload($session)));
-
-        // 5. Failsafe completion even if the player disconnects.
+        // Failsafe completion even if the player disconnects.
         CompleteSpinJob::dispatch($session->id)
             ->delay(now()->addMilliseconds($session->spin_duration_ms + 500));
         ReleaseSpinJob::dispatch($session->id)
@@ -160,7 +154,7 @@ class SpinService
     }
 
     /**
-     * Complete a spin (idempotent). Records the result and broadcasts.
+     * Complete a spin and record the result (idempotent).
      */
     public function complete(SpinSession $session): SpinSession
     {
@@ -200,11 +194,7 @@ class SpinService
             }
         });
 
-        $session->refresh();
-        $voucher = $session->result?->voucher;
-        broadcast(new SpinCompleted($this->buildCompletedPayload($session->fresh(['prize']), $voucher)));
-
-        return $session;
+        return $session->refresh();
     }
 
     /**
@@ -233,7 +223,6 @@ class SpinService
         return [
             'spin_session_id' => $session->id,
             'campaign_id' => $session->campaign_id,
-            'player_display' => $this->playerDisplay($session->player),
             'prize_id' => $prize?->id,
             'prize_name' => $prize?->name,
             'prize_rarity' => $prize?->rarity,
@@ -282,29 +271,6 @@ class SpinService
             'completed_at_server' => optional($session->completed_at ?? now())->toIso8601String(),
             'server_time' => now()->toIso8601String(),
         ];
-    }
-
-    /**
-     * Public-safe player label, honouring the live-view privacy settings.
-     */
-    public function playerDisplay(?Player $player): string
-    {
-        if (! $player) {
-            return 'A player';
-        }
-
-        $showName = (bool) Settings::get('live_view.show_player_name', true);
-        $showMasked = (bool) Settings::get('live_view.show_masked_email', true);
-
-        if ($showName && $player->display_name) {
-            return $player->display_name;
-        }
-
-        if ($showMasked) {
-            return $player->maskedEmail();
-        }
-
-        return 'A player';
     }
 
     protected function isUniqueViolation(QueryException $e): bool

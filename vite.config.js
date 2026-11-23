@@ -10,9 +10,6 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/landing.js',
                 'resources/js/spin/spin-page.js',
-                'resources/js/spin/live-view.js',
-                'resources/js/spin/leaderboard.js',
-                'resources/js/admin/redeem-scanner.js',
             ],
             refresh: true,
         }),
@@ -39,20 +36,12 @@ export default defineConfig({
                             test: /[\\/]node_modules[\\/]matter-js[\\/]/,
                         },
                         {
-                            name: 'vendor-realtime',
-                            test: /[\\/]node_modules[\\/](?:laravel-echo|pusher-js)[\\/]/,
-                        },
-                        {
                             name: 'vendor-confetti',
                             test: /[\\/]node_modules[\\/]canvas-confetti[\\/]/,
                         },
                         {
                             name: 'vendor-alpine',
                             test: /[\\/]node_modules[\\/]alpinejs[\\/]/,
-                        },
-                        {
-                            name: 'vendor-qrcode-scanner',
-                            test: /[\\/]node_modules[\\/]html5-qrcode[\\/]/,
                         },
                         {
                             name: 'vendor-swiper',

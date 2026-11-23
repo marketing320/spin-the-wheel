@@ -76,7 +76,7 @@
                 </h3>
                 <p class="mt-1 text-sm text-rose-700">
                     Permanently deletes <strong>all players, spins, winners, vouchers, form
-                    responses, OTPs</strong> and queue/geofence logs, then restores the active
+                    responses, OTPs</strong>, and geofence logs, then restores the active
                     campaign's prize stock. Use this to clear test data before going live.
                     @if ($activeCampaign)
                         Active campaign: <strong>{{ $activeCampaign->name }}</strong>.
@@ -124,7 +124,7 @@
                 <div class="space-y-2">
                     <label class="flex items-center gap-2 text-sm text-slate-600">
                         <input type="checkbox" wire:model="is_staff" class="h-4 w-4 rounded accent-brand-500">
-                        Sales / Staff — dashboard, spin history &amp; voucher redemption
+                        Sales / Staff — dashboard and spin history
                     </label>
                     <label class="flex items-center gap-2 text-sm text-slate-600">
                         <input type="checkbox" wire:model="is_admin" class="h-4 w-4 rounded accent-brand-500">

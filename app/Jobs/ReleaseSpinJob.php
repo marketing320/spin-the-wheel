@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\Models\SpinSession;
 use App\Services\SpinLockService;
-use App\Services\SpinQueueService;
 use App\Services\SpinService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -15,9 +14,9 @@ class ReleaseSpinJob implements ShouldQueue
 
     public function __construct(public int $spinSessionId) {}
 
-    public function handle(SpinService $spins, SpinLockService $lock, SpinQueueService $queue): void
+    public function handle(SpinService $spins, SpinLockService $lock): void
     {
-        $session = SpinSession::with('campaign')->find($this->spinSessionId);
+        $session = SpinSession::find($this->spinSessionId);
 
         if (! $session || $session->status !== SpinSession::STATUS_ACTIVE) {
             return;
@@ -32,6 +31,5 @@ class ReleaseSpinJob implements ShouldQueue
         }
 
         $lock->release($session->fresh());
-        $queue->broadcast($session->campaign);
     }
 }

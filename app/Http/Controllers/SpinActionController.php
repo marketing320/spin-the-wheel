@@ -8,7 +8,6 @@ use App\Models\SpinSession;
 use App\Services\GeofenceService;
 use App\Services\SpinEligibilityService;
 use App\Services\SpinLockService;
-use App\Services\SpinQueueService;
 use App\Services\SpinService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,7 +25,6 @@ class SpinActionController extends Controller
         protected SpinEligibilityService $eligibility,
         protected GeofenceService $geofence,
         protected SpinLockService $lock,
-        protected SpinQueueService $queue,
     ) {}
 
     public function eligibility(): JsonResponse
@@ -40,12 +38,10 @@ class SpinActionController extends Controller
 
         $result = $this->eligibility->check($player, $campaign);
         $active = $this->lock->currentActive();
-        $queue = $this->queue->status($campaign, $player);
 
         return response()->json(array_merge($result, [
             'spin_in_progress' => $active !== null && $active->player_id !== $player->id,
-            'queue' => $queue,
-            'can_start' => $result['eligible'] && $active === null && (! $queue['queued'] || $queue['position'] === 1),
+            'can_start' => $result['eligible'] && $active === null,
             'geofence_enabled' => (bool) ($campaign->geofenceSetting?->enabled),
         ]));
     }
@@ -72,37 +68,6 @@ class SpinActionController extends Controller
         );
 
         return response()->json($result);
-    }
-
-    public function joinQueue(): JsonResponse
-    {
-        $player = Auth::guard('player')->user();
-        $campaign = Campaign::current();
-
-        if (! $campaign) {
-            return response()->json(['ok' => false, 'message' => 'No active campaign.'], 422);
-        }
-
-        $eligibility = $this->eligibility->check($player, $campaign);
-        if (! $eligibility['eligible']) {
-            return response()->json(array_merge(['ok' => false], $eligibility), 422);
-        }
-
-        $active = $this->lock->currentActive();
-        if (! $active && ! $this->queue->hasWaiting($campaign)) {
-            return response()->json([
-                'ok' => false,
-                'reason' => 'spin_available',
-                'message' => 'The wheel is available. Tap again to spin.',
-            ], 409);
-        }
-
-        return response()->json([
-            'ok' => true,
-            'queued' => true,
-            'queue' => $this->queue->join($campaign, $player),
-            'message' => 'You have joined the spin queue.',
-        ], 202);
     }
 
     public function start(Request $request): JsonResponse
@@ -134,19 +99,6 @@ class SpinActionController extends Controller
             return response()->json(array_merge(['ok' => false, 'reason' => 'geofence_blocked'], $geo), 403);
         }
 
-        $active = $this->lock->currentActive();
-        $queue = $this->queue->status($campaign, $player);
-
-        if (($active && $active->player_id !== $player->id)
-            || (! $active && $this->queue->hasWaiting($campaign) && ! $this->queue->isFirst($campaign, $player))) {
-            return response()->json([
-                'ok' => true,
-                'queued' => true,
-                'queue' => $this->queue->join($campaign, $player),
-                'message' => 'You have joined the spin queue.',
-            ], 202);
-        }
-
         try {
             $session = $this->spins->start($player, [
                 'ip' => $request->ip(),
@@ -155,22 +107,11 @@ class SpinActionController extends Controller
                 'lng' => $data['lng'] ?? null,
             ]);
         } catch (SpinException $e) {
-            if ($e->reason === 'spin_in_progress') {
-                return response()->json([
-                    'ok' => true,
-                    'queued' => true,
-                    'queue' => $this->queue->join($campaign, $player),
-                    'message' => 'You have joined the spin queue.',
-                ], 202);
-            }
-
             return response()->json(
                 array_merge(['ok' => false], $e->toArray()),
                 $this->statusForReason($e->reason)
             );
         }
-
-        $this->queue->remove($campaign, $player);
 
         return response()->json([
             'ok' => true,

@@ -40,11 +40,6 @@ server {
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
 
-        # Websocket upgrade support — unused today (VITE_REVERB_ENABLED=false,
-        # polling mode) but harmless to leave in place if that's ever switched on.
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-
         proxy_read_timeout 60s;
         proxy_send_timeout 60s;
     }

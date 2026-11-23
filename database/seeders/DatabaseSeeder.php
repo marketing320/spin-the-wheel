@@ -37,8 +37,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Brightstar Marketing', 'password' => Hash::make('password'), 'is_admin' => true, 'is_staff' => false]
         );
 
-        // Cashier account: limited surface only (dashboard, spin history,
-        // voucher redemption) — see EnsureStaffAccess / routes/admin.php.
+        // Cashier account: dashboard and spin history.
         User::updateOrCreate(
             ['email' => 'cashier@brightstarcomp.com'],
             ['name' => 'Event Cashier', 'password' => Hash::make('password'), 'is_admin' => false, 'is_staff' => true]
@@ -77,32 +76,27 @@ class DatabaseSeeder extends Seeder
 
     protected function seedPrizes(Campaign $campaign): void
     {
-        // Flat arcade palette (no gradients): blue, green, teal, purple, yellow.
-        // Columns: name, rarity, color, weight, confetti, redemption message,
-        // type, voucher expiry override (hours; null = use the global default).
+        // Columns: name, rarity, color, wheel slots, confetti, stock limit.
         $prizes = [
-            ['Thank You Voucher', 'common', '#0e75bc', 55, 'light', 'Show your voucher code/QR at the counter to claim it.', Prize::TYPE_VOUCHER, null],
-            ['Small Gift', 'uncommon', '#24b26b', 25, 'medium', 'Collect your gift at the registration desk.', Prize::TYPE_PHYSICAL, null],
-            ['Discount Voucher', 'rare', '#12a5b0', 12, 'strong', 'Show your voucher code/QR at the counter for 20% off your next purchase.', Prize::TYPE_VOUCHER, 6],
-            ['Premium Accessory', 'epic', '#7b5cff', 6, 'heavy', 'Our team will contact you to arrange delivery.', Prize::TYPE_PHYSICAL, null],
-            ['Grand Prize', 'legendary', '#f6c31c', 2, 'max', 'Congratulations! Please see the event manager to claim your grand prize.', Prize::TYPE_PHYSICAL, null],
+            ['RM50 Voucher', 'common', '#0e75bc', 15, 'light', null],
+            ['RM70 Voucher', 'rare', '#12a5b0', 9, 'strong', null],
+            ['RM100 Voucher', 'legendary', '#f6c31c', 3, 'max', 3],
         ];
 
-        foreach ($prizes as $i => [$name, $rarity, $color, $weight, $confetti, $redemption, $type, $voucherExpiryHours]) {
-            Prize::updateOrCreate(
+        foreach ($prizes as $i => [$name, $rarity, $color, $slots, $confetti, $stock]) {
+            Prize::firstOrCreate(
                 ['campaign_id' => $campaign->id, 'name' => $name],
                 [
-                    'description' => null,
                     'rarity' => $rarity,
-                    'type' => $type,
-                    'voucher_expiry_hours' => $voucherExpiryHours,
+                    'type' => Prize::TYPE_VOUCHER,
                     'color' => $color,
-                    'weight' => $weight,
-                    'win_percentage' => $weight, // usable if switched to strict mode
-                    'inventory_enabled' => $rarity === 'legendary',
-                    'inventory_quantity' => $rarity === 'legendary' ? 3 : null,
+                    'segment_count' => $slots,
+                    'weight' => $slots,
+                    'win_percentage' => round($slots * 100 / 27, 4),
+                    'inventory_enabled' => $stock !== null,
+                    'inventory_quantity' => $stock,
                     'confetti_level' => $confetti,
-                    'redemption_message' => $redemption,
+                    'redemption_message' => 'Show your voucher code or QR at the counter.',
                     'is_active' => true,
                     'sort_order' => $i,
                 ]
@@ -166,9 +160,7 @@ class DatabaseSeeder extends Seeder
     {
         Settings::setMany([
             'branding.app_name' => 'Spin The Wheel',
-            'branding.tagline' => 'Spin to win amazing prizes — good luck!',
-            'live_view.idle_message' => 'Step up and spin to win!',
-            'live_view.branding' => 'Spin The Wheel',
+            'branding.tagline' => "Create, game, and explore what's next with GeForce and Spark.",
         ]);
     }
 }

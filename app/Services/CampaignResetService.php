@@ -8,7 +8,6 @@ use App\Models\GeofenceLog;
 use App\Models\Player;
 use App\Models\PlayerFormResponse;
 use App\Models\Prize;
-use App\Models\SpinQueueEntry;
 use App\Models\SpinResult;
 use App\Models\SpinSession;
 use App\Models\Voucher;
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Wipes all player-side test data (players, spins, wins, vouchers, OTPs, form
- * responses, geofence + queue logs) so a production instance that was used for
+ * responses, and geofence logs) so a production instance that was used for
  * testing can be reset to a clean slate before going live.
  *
  * Players are NOT campaign-scoped, so the wipe is global by design — "refresh
@@ -51,7 +50,6 @@ class CampaignResetService
                 'vouchers' => Voucher::query()->delete(),
                 'spin_results' => SpinResult::query()->delete(),
                 'spin_sessions' => SpinSession::query()->delete(),
-                'queue_entries' => SpinQueueEntry::query()->delete(),
                 'geofence_logs' => GeofenceLog::query()->delete(),
                 'form_responses' => PlayerFormResponse::query()->delete(),
                 'players' => Player::query()->delete(),

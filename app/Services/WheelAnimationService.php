@@ -8,8 +8,7 @@ use App\Support\Settings;
 use Illuminate\Support\Collection;
 
 /**
- * Produces the deterministic animation parameters that BOTH the player phone
- * and the /live-view screen replay identically.
+ * Produces deterministic animation parameters for the player's wheel.
  *
  * Wheel / pointer convention (must match resources/js/spin/spin-controller.js):
  *   - Segments are laid out clockwise starting at the top (12 o'clock).
@@ -26,10 +25,8 @@ class WheelAnimationService
      * win_percentage/weight says regardless of how many slots it has; see
      * indexOfPrize(), which picks randomly among a winner's slots.
      *
-     * Slots are interleaved round-robin across prizes (each prize's first
-     * slot, then each prize's second slot that has one, etc.) rather than
-     * placed consecutively, so a multi-segment prize's copies are spread
-     * around the wheel instead of clustered in one block.
+     * Place the prizes with the fewest slots first so their slices can be
+     * spaced around the full wheel before the more frequent prizes fill it.
      *
      * @param  Collection<int, Prize>|null  $prizes
      * @return array<int, array<string, mixed>>
@@ -38,19 +35,22 @@ class WheelAnimationService
     {
         $prizes ??= $campaign->activePrizes()->get();
 
-        $queues = $prizes->values()->map(fn (Prize $prize) => array_fill(0, max(1, $prize->segment_count), $prize));
-        $maxSlots = (int) ($queues->map(fn (array $q) => count($q))->max() ?? 0);
+        $total = $prizes->sum(fn (Prize $prize) => max(1, $prize->segment_count));
+        $ordered = array_fill(0, $total, null);
 
-        $ordered = collect();
-        for ($round = 0; $round < $maxSlots; $round++) {
-            foreach ($queues as $queue) {
-                if (isset($queue[$round])) {
-                    $ordered->push($queue[$round]);
+        $prizes = $prizes->sortBy([['segment_count', 'asc'], ['sort_order', 'asc'], ['id', 'asc']])->values();
+        foreach ($prizes as $offset => $prize) {
+            $count = max(1, $prize->segment_count);
+            for ($slot = 0; $slot < $count; $slot++) {
+                $index = (intdiv($slot * $total, $count) + $offset) % $total;
+                while (isset($ordered[$index])) {
+                    $index = ($index + 1) % $total;
                 }
+                $ordered[$index] = $prize;
             }
         }
 
-        return $ordered->values()->map(fn (Prize $prize, int $index) => [
+        return collect($ordered)->map(fn (Prize $prize, int $index) => [
             'index' => $index,
             'prize_id' => $prize->id,
             'label' => $prize->name,

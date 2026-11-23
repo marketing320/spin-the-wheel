@@ -30,22 +30,6 @@ class Settings
             'spin.lock_timeout_seconds' => config('spin.spin.lock_timeout_seconds'),
             'spin.default_duration_ms' => config('spin.spin.default_duration_ms'),
 
-            'live_view.show_player_name' => true,
-            'live_view.show_masked_email' => true,
-            'live_view.idle_message' => 'Waiting for the next lucky player…',
-            'live_view.branding' => config('app.name'),
-            'live_view.auto_reset_seconds' => 12,
-
-            // Constant CTA banner shown below the branding bar while idle.
-            'live_view.cta_enabled' => false,
-            'live_view.cta_message' => '',
-            'live_view.cta_color' => 'sun',
-
-            // Full-screen idle banner slideshow for /front-view only.
-            'front_view.enabled' => false,
-            'front_view.interval_seconds' => 6,
-            'front_view.images' => [],
-
             'branding.app_name' => config('app.name'),
             'branding.tagline' => 'Spin to win amazing prizes!',
             'branding.terms' => '',

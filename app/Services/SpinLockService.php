@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Events\SpinExpired;
 use App\Models\SpinSession;
 use App\Support\Settings;
 
@@ -47,8 +46,6 @@ class SpinLockService
                 'status' => SpinSession::STATUS_EXPIRED,
                 'active_guard' => null,
             ])->save();
-
-            broadcast(new SpinExpired($session->id, 'timeout'));
         }
 
         return $buffers->count() + $stale->count();

@@ -1,0 +1,335 @@
+.event-theme,
+.admin-surface {
+    --font-display: system-ui, sans-serif;
+    font-family: var(--font-display);
+}
+
+.event-theme {
+    --event-green: #a8e827;
+    --event-ink: #11170a;
+    --event-surface: #171c15;
+    --event-subtle: #22291e;
+    --event-border: #4a5740;
+    --event-text: #f6f8f2;
+    --event-muted: #b6c1ad;
+    color-scheme: dark;
+    isolation: isolate;
+    color: var(--event-text);
+    background:
+        radial-gradient(ellipse at 73% 46%, #263516 0, transparent 54%),
+        linear-gradient(155deg, #121710, #0b0d0b 65%);
+}
+
+.event-theme::before {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    content: '';
+    background:
+        linear-gradient(#a6ee2622 1px, transparent 1px),
+        linear-gradient(90deg, #a6ee2622 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at 72% 48%, #000, transparent 68%);
+}
+
+.event-theme header {
+    border-bottom: 1px solid #343d2c;
+}
+
+.event-theme :is(h1, h2, h3, .label, .text-slate-900, .text-slate-800, .text-slate-700) {
+    color: var(--event-text);
+}
+
+.event-theme :is(.text-slate-400, .text-slate-500, .text-slate-600, footer) {
+    color: var(--event-muted);
+}
+
+.event-theme :is(.text-brand-500, .text-brand-600, .text-brand-700, .text-grape-500, .text-cherry-500, .text-cherry-600) {
+    color: var(--event-green);
+}
+
+.event-theme :is(.text-rose-500, .text-rose-600, .text-red-500, .text-red-600) {
+    color: #ff9aa5;
+}
+
+.event-theme :is(.card, .event-panel) {
+    border-color: var(--event-border);
+    border-radius: 10px;
+    background: var(--event-surface);
+    color: var(--event-text);
+}
+
+.event-theme .card {
+    border-width: 1px;
+    box-shadow: none;
+}
+
+.event-theme :is(.bg-slate-50, .bg-slate-100, .bg-brand-50, .bg-brand-100) {
+    background-color: var(--event-subtle);
+}
+
+.event-theme :is(.border-slate-100, .border-slate-200, .border-brand-200, .border-brand-300) {
+    border-color: var(--event-border);
+}
+
+.event-theme :is(.ring-slate-300, .ring-brand-300) {
+    --tw-ring-color: var(--event-border);
+}
+
+.event-theme :is(.btn-primary, .btn-ghost, .field) {
+    min-height: 44px;
+    border: 1px solid var(--event-border);
+    border-radius: 6px;
+    background: var(--event-surface);
+    color: var(--event-text);
+    box-shadow: none;
+}
+
+.event-theme .btn-primary {
+    border-color: transparent;
+    background: var(--event-green);
+    color: var(--event-ink);
+    font-weight: 800;
+}
+
+.event-theme .btn-primary:hover:not(:disabled) {
+    background: #b9f444;
+}
+
+.event-theme :is(.btn-ghost, button.event-panel):hover:not(:disabled) {
+    background: var(--event-subtle);
+}
+
+.event-theme .btn-primary:disabled {
+    border-color: var(--event-border);
+    background: var(--event-subtle);
+    color: var(--event-muted);
+    opacity: 1;
+}
+
+.event-theme :is(a, button, .field, input):focus-visible {
+    outline: 2px solid var(--event-green);
+    outline-offset: 3px;
+}
+
+.event-theme .field::placeholder {
+    color: var(--event-muted);
+}
+
+.event-theme :is(input[type='checkbox'], input[type='radio']) {
+    accent-color: var(--event-green);
+}
+
+.event-theme .event-icon {
+    background: #2a391b;
+    color: var(--event-green);
+}
+
+.event-partners {
+    color: var(--event-green);
+    font-size: 0.75rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.event-theme .prize-swiper-pagination .swiper-pagination-bullet {
+    background-color: var(--event-subtle);
+    border-color: var(--event-border);
+    box-shadow: none;
+}
+
+.event-theme .prize-swiper-pagination .swiper-pagination-bullet-active {
+    background-color: var(--event-green);
+    border-color: var(--event-green);
+}
+
+.event-theme #mobile-account-menu :is(a, button):hover {
+    background: var(--event-subtle);
+}
+
+.spin-event-layout {
+    display: grid;
+    width: min(100%, 28rem);
+    gap: 1rem;
+    text-align: center;
+    animation: spin-event-enter 450ms ease-out both;
+}
+
+.spin-event-intro h1 {
+    margin-top: 0.4rem;
+    color: var(--event-text);
+    font-size: clamp(2.5rem, 6vw, 5.75rem);
+    font-weight: 850;
+    letter-spacing: -0.065em;
+    line-height: 0.96;
+    text-wrap: balance;
+}
+
+.spin-event-prize-caption {
+    color: var(--event-muted);
+    font-size: 0.75rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.spin-event #status-banner:empty {
+    display: none;
+}
+
+.spin-event-prize {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 4.5rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid #4a5740;
+    border-radius: 6px;
+    background: var(--event-surface);
+    text-align: left;
+}
+
+.spin-event #pointer-prize-chip {
+    background: #2a391b;
+    color: var(--event-green);
+}
+
+.spin-event #pointer-prize-name {
+    margin-top: 0.15rem;
+    color: var(--event-text);
+    font-size: clamp(1rem, 2vw, 1.375rem);
+    font-weight: 750;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.spin-event-wheel {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    aspect-ratio: 1;
+    margin-block: 0.75rem 0.2rem;
+    container-type: inline-size;
+    border-radius: 50%;
+    background: #0a0e08;
+    box-shadow: 0 0 3rem #91d6161a, 0 0.8rem 2rem #0009;
+}
+
+.spin-event-wheel #wheel-stage {
+    position: absolute;
+    inset: 2%;
+    overflow: hidden;
+    border-radius: 50%;
+}
+
+.spin-event-rim {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    padding: 3.4%;
+    border: 1px solid #687751;
+    border-radius: 50%;
+    background:
+        radial-gradient(closest-side, transparent 80%, #11180d55 100%),
+        repeating-conic-gradient(from -0.75deg, #a9e82d 0deg 1.5deg, #303a29 1.5deg 15deg);
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+.spin-event-pointer {
+    position: absolute;
+    z-index: 3;
+    top: -2%;
+    left: 50%;
+    width: clamp(1.5rem, 7cqi, 2.5rem);
+    height: clamp(1.5rem, 7cqi, 2.5rem);
+    translate: -50% 0;
+    transform-origin: 50% 10%;
+    background: var(--event-green);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.spin-event-hub {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 17%;
+    aspect-ratio: 1;
+    place-items: center;
+    translate: -50% -50%;
+    border: 2px solid #94bb5a;
+    border-radius: 50%;
+    background: #f4f7ee;
+    box-shadow: 0 0 0 5px #0d130b, 0 0 1.2rem #0008;
+}
+
+.spin-event-hub img {
+    width: 78%;
+}
+
+.spin-event #spin-button {
+    width: 100%;
+    min-height: 3.5rem;
+    font-size: 1.125rem;
+}
+
+.spin-event #spin-button [data-label-idle]:not(.hidden) {
+    display: inline-flex;
+}
+
+.spin-event #spin-button:hover:not(:disabled) {
+    translate: 0 -2px;
+}
+
+.spin-event #spin-button:active:not(:disabled) {
+    translate: 0 1px;
+}
+
+.spin-event #spin-hint {
+    margin-top: 0.6rem;
+    min-height: 1.25rem;
+    color: var(--event-muted);
+    font-size: 0.9rem;
+}
+
+.spin-event #result-voucher {
+    border-color: #526147;
+    background: #273020;
+    color: var(--event-text);
+}
+
+@media (min-width: 800px) {
+    .spin-event-layout {
+        width: 100%;
+        column-gap: clamp(2rem, 6vw, 5rem);
+        grid-template-areas:
+            '. wheel'
+            'intro wheel'
+            'status wheel'
+            'prize wheel'
+            'action wheel'
+            '. wheel';
+        grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+        grid-template-rows: 1fr auto auto auto auto 1fr;
+        text-align: left;
+    }
+
+    .spin-event-intro { grid-area: intro; align-self: end; }
+    .spin-event #status-banner { grid-area: status; }
+    .spin-event #status-banner:empty { display: block; margin-top: -1rem; }
+    .spin-event-prize { grid-area: prize; align-self: start; }
+    .spin-event-action { grid-area: action; align-self: start; }
+    .spin-event-wheel { grid-area: wheel; align-self: center; margin-block: 0; }
+}
+
+@keyframes spin-event-enter {
+    from { opacity: 0; transform: translateY(10px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spin-event-layout { animation: none; }
+    .spin-event #spin-button { transition: none; }
+}

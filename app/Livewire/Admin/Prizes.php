@@ -64,7 +64,7 @@ class Prizes extends Component
     public int $segment_count = 1;
 
     /** Maximum wheel slots a single prize may occupy. */
-    public const MAX_SEGMENT_COUNT = 10;
+    public const MAX_SEGMENT_COUNT = 50;
 
     /** Preset odds share (%) per rarity tier, used by autoDistributeByRarity(). */
     public const RARITY_SHARE = [
