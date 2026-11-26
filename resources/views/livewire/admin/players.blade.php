@@ -24,9 +24,15 @@
             @if ($canExport)
                 <button wire:click="clearSelection" class="btn-ghost !py-2 text-xs">Clear</button>
             @endif
-            <a href="{{ $canExport ? route('admin.players.export', $exportParams) : '#' }}"
+            <a href="{{ $canExport ? route('admin.players.export', $exportParams + ['format' => 'xlsx']) : '#' }}"
                @class(['btn-primary !py-2 text-xs', 'pointer-events-none opacity-50' => ! $canExport])>
-                <i data-lucide="download" class="h-4 w-4"></i> Export CSV
+                <span wire:ignore class="inline-flex"><i data-lucide="download" class="h-4 w-4"></i></span>
+                Export Excel
+            </a>
+            <a href="{{ $canExport ? route('admin.players.export', $exportParams + ['format' => 'csv']) : '#' }}"
+               @class(['btn-ghost !py-2 text-xs', 'pointer-events-none opacity-50' => ! $canExport])>
+                <span wire:ignore class="inline-flex"><i data-lucide="download" class="h-4 w-4"></i></span>
+                Export CSV
             </a>
         </div>
     </div>

@@ -114,6 +114,7 @@ class DatabaseSeeder extends Seeder
                 ['label' => 'Penang', 'value' => 'penang'],
                 ['label' => 'Johor Bahru', 'value' => 'johor_bahru'],
             ]],
+            ['Invoice No', 'invoice_no', 'text', 'e.g. LY-0123-456789', true, null],
             ['I agree to the terms and to be contacted about my prize', 'consent', 'consent', null, true, null],
         ];
 
