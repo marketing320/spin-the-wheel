@@ -28,17 +28,18 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="admin-surface antialiased">
-<div x-data="{ open: false }" class="flex min-h-screen bg-slate-50">
+<div x-data="{ open: false }" @keydown.escape.window="open = false" class="flex min-h-screen bg-slate-50">
     {{-- Sidebar --}}
     <aside :class="open ? 'translate-x-0' : '-translate-x-full'"
            class="fixed inset-y-0 left-0 z-40 w-64 transform border-r-2 border-slate-200 bg-white transition-transform lg:translate-x-0">
         <div class="flex h-16 items-center gap-2 px-5 font-display text-lg font-bold text-slate-900">
             <span class="grid h-8 w-8 place-items-center rounded-lg border-2 border-slate-900 bg-cherry-500"><i data-lucide="ferris-wheel" class="h-4 w-4 text-white"></i></span>
-            Admin
+            <span>Admin</span>
+            <button type="button" @click="open = false" aria-label="Close menu" class="ml-auto grid h-10 w-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 lg:hidden"><i data-lucide="x" class="pointer-events-none h-5 w-5"></i></button>
         </div>
         <nav class="mt-2 space-y-1 px-3">
             @foreach ($nav as [$route, $label, $icon, $adminOnly])
-                <a href="{{ route($route) }}" wire:navigate @class([
+                <a href="{{ route($route) }}" wire:navigate @click="open = false" @class([
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
                     'bg-brand-50 text-brand-700 ring-1 ring-brand-200' => request()->routeIs($route),
                     'text-slate-600 hover:bg-slate-100 hover:text-slate-900' => ! request()->routeIs($route),
@@ -56,7 +57,7 @@
     <div class="flex min-w-0 flex-1 flex-col lg:pl-64">
         <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b-2 border-slate-200 bg-white px-5">
             <div class="flex items-center gap-3">
-                <button @click="open = !open" class="lg:hidden text-slate-600"><i data-lucide="menu" class="h-6 w-6"></i></button>
+                <button type="button" @click="open = !open" aria-label="Toggle menu" :aria-expanded="open" class="-ml-2 grid h-11 w-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"><i data-lucide="menu" class="pointer-events-none h-6 w-6"></i></button>
                 <h1 class="font-display text-lg font-bold text-slate-900">{{ $title }}</h1>
             </div>
             <div class="flex items-center gap-3 text-sm text-slate-500">
