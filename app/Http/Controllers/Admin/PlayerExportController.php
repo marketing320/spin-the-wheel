@@ -52,6 +52,20 @@ class PlayerExportController extends Controller
             $headers[] = $field->label;
         }
 
+        $campaignId = $campaign?->id;
+
+        if ($request->string('format')->toString() === 'csv') {
+            return response()->streamDownload(function () use ($players, $headers, $fields, $campaignId) {
+                $out = fopen('php://output', 'w');
+                fwrite($out, "ï»¿"); // UTF-8 BOM so Excel reads accents correctly
+                fputcsv($out, $headers);
+                foreach ($players as $player) {
+                    fputcsv($out, $this->rowFor($player, $fields, $campaignId));
+                }
+                fclose($out);
+            }, 'players-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
+
         $sheet = (new Spreadsheet)->getActiveSheet();
         $sheet->setTitle('Players');
         $lastCol = $sheet->getCell([count($headers), 1])->getColumn();
@@ -83,35 +97,9 @@ class PlayerExportController extends Controller
         $sheet->getRowDimension($headerRow)->setRowHeight(24);
 
         // Data rows.
-        $campaignId = $campaign?->id;
         $row = $headerRow + 1;
         foreach ($players as $player) {
-            $response = $player->formResponses->firstWhere('campaign_id', $campaignId)
-                ?? $player->formResponses->first();
-            $answers = (array) ($response->responses ?? []);
-
-            $values = [
-                $player->id,
-                $player->email,
-                $player->display_name,
-                ($player->otp_verified && $player->email_verified_at) ? 'Yes' : 'No',
-                $player->email_verified_at?->format('d M Y H:i'),
-                $player->form_completed_at?->format('d M Y H:i'),
-                $player->blocked_at ? 'Yes' : 'No',
-                $player->spin_sessions_count,
-                $player->last_spin_at?->format('d M Y H:i'),
-                $player->last_seen_at?->format('d M Y H:i'),
-                $player->created_at?->format('d M Y H:i'),
-            ];
-            foreach ($fields as $field) {
-                $value = $answers[$field->field_key] ?? '';
-                $values[] = match (true) {
-                    is_array($value) => implode(', ', $value),
-                    $value === true => 'Yes',
-                    $value === false => 'No',
-                    default => (string) $value,
-                };
-            }
+            $values = $this->rowFor($player, $fields, $campaignId);
 
             foreach ($values as $i => $v) {
                 // Explicit string type keeps phone numbers / invoice numbers intact
@@ -171,5 +159,38 @@ class PlayerExportController extends Controller
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    /** @return array<int, mixed> */
+    private function rowFor(Player $player, $fields, ?int $campaignId): array
+    {
+        $response = $player->formResponses->firstWhere('campaign_id', $campaignId)
+            ?? $player->formResponses->first();
+        $answers = (array) ($response->responses ?? []);
+
+        $values = [
+            $player->id,
+            $player->email,
+            $player->display_name,
+            ($player->otp_verified && $player->email_verified_at) ? 'Yes' : 'No',
+            $player->email_verified_at?->format('d M Y H:i'),
+            $player->form_completed_at?->format('d M Y H:i'),
+            $player->blocked_at ? 'Yes' : 'No',
+            $player->spin_sessions_count,
+            $player->last_spin_at?->format('d M Y H:i'),
+            $player->last_seen_at?->format('d M Y H:i'),
+            $player->created_at?->format('d M Y H:i'),
+        ];
+        foreach ($fields as $field) {
+            $value = $answers[$field->field_key] ?? '';
+            $values[] = match (true) {
+                is_array($value) => implode(', ', $value),
+                $value === true => 'Yes',
+                $value === false => 'No',
+                default => (string) $value,
+            };
+        }
+
+        return $values;
     }
 }

@@ -159,6 +159,11 @@ class AdminPagesTest extends TestCase
         $this->get(route('admin.players.export', ['ids' => $players->take(2)->pluck('id')->implode(',')]))
             ->assertOk()
             ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        // CSV format on request.
+        $this->get(route('admin.players.export', ['all' => 1, 'format' => 'csv']))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }
 
     public function test_prize_can_be_marked_as_voucher_with_expiry_override(): void

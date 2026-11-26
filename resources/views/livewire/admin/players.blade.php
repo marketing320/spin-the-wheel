@@ -24,10 +24,15 @@
             @if ($canExport)
                 <button wire:click="clearSelection" class="btn-ghost !py-2 text-xs">Clear</button>
             @endif
-            <a href="{{ $canExport ? route('admin.players.export', $exportParams) : '#' }}"
+            <a href="{{ $canExport ? route('admin.players.export', $exportParams + ['format' => 'xlsx']) : '#' }}"
                @class(['btn-primary !py-2 text-xs', 'pointer-events-none opacity-50' => ! $canExport])>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export Excel
+            </a>
+            <a href="{{ $canExport ? route('admin.players.export', $exportParams + ['format' => 'csv']) : '#' }}"
+               @class(['btn-ghost !py-2 text-xs', 'pointer-events-none opacity-50' => ! $canExport])>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
             </a>
         </div>
     </div>
