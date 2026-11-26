@@ -144,7 +144,7 @@ class AdminPagesTest extends TestCase
         $this->assertSame(60, (int) \App\Support\Settings::get('celebration.image_size'));
     }
 
-    public function test_players_csv_export_downloads_selected_and_all(): void
+    public function test_players_xlsx_export_downloads_selected_and_all(): void
     {
         $this->actingAs($this->admin(), 'web');
 
@@ -153,12 +153,12 @@ class AdminPagesTest extends TestCase
         // Export all matching.
         $this->get(route('admin.players.export', ['all' => 1]))
             ->assertOk()
-            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
         // Export a specific selection.
         $this->get(route('admin.players.export', ['ids' => $players->take(2)->pluck('id')->implode(',')]))
             ->assertOk()
-            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
     public function test_prize_can_be_marked_as_voucher_with_expiry_override(): void

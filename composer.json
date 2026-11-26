@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.3",
+        "phpoffice/phpspreadsheet": "^5.12",
         "picqer/php-barcode-generator": "^3.2"
     },
     "require-dev": {
